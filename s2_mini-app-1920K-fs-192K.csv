@@ -1,0 +1,8 @@
+# Name,  Type, SubType, Offset, Size, Flags
+# bootloader               4K,   28K,
+# partition table         32K,    4K,
+nvs,     data, nvs,       36K,   20K,
+otadata, data, ota,       56K,    8K,
+app0,    app,  ota_0,     64K, 1920K,
+app1,    app,  ota_1,   1984K, 1920K,
+spiffs,  data, spiffs,  3904K,  192K,
