@@ -81,21 +81,4 @@ private:
 	static void main_exit_admin_function(Shell &shell, const std::vector<std::string> &arguments);
 };
 
-class AppStreamConsole: public uuid::console::StreamConsole, public AppShell {
-public:
-	AppStreamConsole(App &app, Stream &stream, bool local);
-	AppStreamConsole(App &app, Stream &stream, const IPAddress &addr, uint16_t port);
-	~AppStreamConsole() override;
-
-	std::string console_name();
-
-private:
-	static std::vector<bool> ptys_;
-
-	std::string name_;
-	size_t pty_;
-	IPAddress addr_;
-	uint16_t port_;
-};
-
 } // namespace app

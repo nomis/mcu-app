@@ -45,6 +45,7 @@
 
 #include "app.h"
 #include "config.h"
+#include "console_stream.h"
 #include "fs.h"
 #include "network.h"
 
@@ -829,7 +830,7 @@ AppStreamConsole::AppStreamConsole(App &app, Stream &stream, bool local)
 		: uuid::console::Shell(commands_, ShellContext::MAIN,
 			local ? (CommandFlags::USER | CommandFlags::LOCAL) : CommandFlags::USER),
 		  uuid::console::StreamConsole(stream),
-		  AppShell(app),
+		  APP_SHELL_TYPE(app),
 		  name_(uuid::read_flash_string(F("ttyS0"))),
 		  pty_(std::numeric_limits<size_t>::max()),
 		  addr_(),
@@ -840,7 +841,7 @@ AppStreamConsole::AppStreamConsole(App &app, Stream &stream, bool local)
 AppStreamConsole::AppStreamConsole(App &app, Stream &stream, const IPAddress &addr, uint16_t port)
 		: uuid::console::Shell(commands_, ShellContext::MAIN, CommandFlags::USER),
 		  uuid::console::StreamConsole(stream),
-		  AppShell(app),
+		  APP_SHELL_TYPE(app),
 		  addr_(addr),
 		  port_(port) {
 	std::array<char, 16> text;

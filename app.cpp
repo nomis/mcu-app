@@ -41,6 +41,7 @@
 
 #include "config.h"
 #include "console.h"
+#include "console_stream.h"
 #include "network.h"
 
 #ifndef APP_NAME
