@@ -59,6 +59,9 @@ public:
 
 	virtual std::string console_name() = 0;
 
+	static void main_exit_function(Shell &shell, const std::vector<std::string> &arguments);
+	static void main_logout_function(Shell &shell, const std::vector<std::string> &arguments);
+
 	App &app_;
 
 protected:
@@ -72,6 +75,10 @@ protected:
 	std::string prompt_suffix() override;
 	void end_of_transmission() override;
 	void stopped() override;
+
+private:
+	static void main_exit_user_function(Shell &shell, const std::vector<std::string> &arguments);
+	static void main_exit_admin_function(Shell &shell, const std::vector<std::string> &arguments);
 };
 
 class AppStreamConsole: public uuid::console::StreamConsole, public AppShell {

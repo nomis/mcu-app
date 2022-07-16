@@ -137,13 +137,17 @@ MAKE_PSTR(wifi_password_fmt, "WiFi Password = %S");
 
 static constexpr unsigned long INVALID_PASSWORD_DELAY_MS = 3000;
 
-static inline App &to_app(Shell &shell) {
-	return dynamic_cast<AppShell&>(shell).app_;
+static inline AppShell &to_shell(Shell &shell) {
+	return dynamic_cast<AppShell&>(shell);
 }
 
-static void setup_builtin_commands(std::shared_ptr<Commands> &commands) {
-	#define NO_ARGUMENTS std::vector<std::string>{}
+static inline App &to_app(Shell &shell) {
+	return to_shell(shell).app_;
+}
 
+#define NO_ARGUMENTS std::vector<std::string>{}
+
+static void setup_builtin_commands(std::shared_ptr<Commands> &commands) {
 	commands->add_command(ShellContext::MAIN, CommandFlags::USER, flash_string_vector{F_(console), F_(log)}, flash_string_vector{F_(log_level_optional)},
 			[] (Shell &shell, const std::vector<std::string> &arguments) {
 		if (!arguments.empty()) {
@@ -162,37 +166,14 @@ static void setup_builtin_commands(std::shared_ptr<Commands> &commands) {
 		return uuid::log::levels_lowercase();
 	});
 
-	auto main_exit_user_function = [] (Shell &shell, const std::vector<std::string> &arguments __attribute__((unused))) {
-		shell.stop();
-	};
-
-	auto main_exit_admin_function = [] (Shell &shell, const std::vector<std::string> &arguments __attribute__((unused))) {
-		shell.logger().log(LogLevel::INFO, LogFacility::AUTH, "Admin session closed on console %s", dynamic_cast<AppShell&>(shell).console_name().c_str());
-		shell.remove_flags(CommandFlags::ADMIN);
-	};
-
-	commands->add_command(ShellContext::MAIN, CommandFlags::USER, flash_string_vector{F_(exit)},
-			[=] (Shell &shell, const std::vector<std::string> &arguments __attribute__((unused))) {
-		if (shell.has_flags(CommandFlags::ADMIN)) {
-			main_exit_admin_function(shell, NO_ARGUMENTS);
-		} else {
-			main_exit_user_function(shell, NO_ARGUMENTS);
-		}
-	});
+	commands->add_command(ShellContext::MAIN, CommandFlags::USER, flash_string_vector{F_(exit)}, AppShell::main_exit_function);
 
 	commands->add_command(ShellContext::MAIN, CommandFlags::USER, flash_string_vector{F_(help)},
 			[] (Shell &shell, const std::vector<std::string> &arguments __attribute__((unused))) {
 		shell.print_all_available_commands();
 	});
 
-	auto main_logout_function = [=] (Shell &shell, const std::vector<std::string> &arguments __attribute__((unused))) {
-		if (shell.has_flags(CommandFlags::ADMIN)) {
-			main_exit_admin_function(shell, NO_ARGUMENTS);
-		}
-		main_exit_user_function(shell, NO_ARGUMENTS);
-	};
-
-	commands->add_command(ShellContext::MAIN, CommandFlags::USER, flash_string_vector{F_(logout)}, main_logout_function);
+	commands->add_command(ShellContext::MAIN, CommandFlags::USER, flash_string_vector{F_(logout)}, AppShell::main_logout_function);
 
 	commands->add_command(ShellContext::MAIN, CommandFlags::ADMIN | CommandFlags::LOCAL, flash_string_vector{F_(mkfs)},
 			[] (Shell &shell, const std::vector<std::string> &arguments __attribute__((unused))) {
@@ -817,6 +798,30 @@ void AppShell::end_of_transmission() {
 		invoke_command(uuid::read_flash_string(F_(logout)));
 	}
 }
+
+void AppShell::main_exit_function(Shell &shell, const std::vector<std::string> &arguments __attribute__((unused))) {
+	if (shell.has_flags(CommandFlags::ADMIN)) {
+		AppShell::main_exit_admin_function(shell, NO_ARGUMENTS);
+	} else {
+		AppShell::main_exit_user_function(shell, NO_ARGUMENTS);
+	}
+}
+
+void AppShell::main_logout_function(Shell &shell, const std::vector<std::string> &arguments __attribute__((unused))) {
+	if (shell.has_flags(CommandFlags::ADMIN)) {
+		AppShell::main_exit_admin_function(shell, NO_ARGUMENTS);
+	}
+	AppShell::main_exit_user_function(shell, NO_ARGUMENTS);
+};
+
+void AppShell::main_exit_user_function(Shell &shell, const std::vector<std::string> &arguments __attribute__((unused))) {
+	shell.stop();
+};
+
+void AppShell::main_exit_admin_function(Shell &shell, const std::vector<std::string> &arguments __attribute__((unused))) {
+	shell.logger().log(LogLevel::INFO, LogFacility::AUTH, "Admin session closed on console %s", dynamic_cast<AppShell&>(shell).console_name().c_str());
+	shell.remove_flags(CommandFlags::ADMIN);
+};
 
 std::vector<bool> AppStreamConsole::ptys_;
 
