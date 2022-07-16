@@ -89,7 +89,9 @@ private:
 	bool write_config(const std::string &filename);
 	void write_config(ArduinoJson::JsonDocument &doc);
 
-#include "../config_class.h"
+#if __has_include("../config_class.h")
+# include "../config_class.h"
+#endif
 };
 
 } // namespace app
