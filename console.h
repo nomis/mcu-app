@@ -46,6 +46,9 @@ enum CommandFlags : unsigned int {
 
 enum ShellContext : unsigned int {
 	MAIN = 0,
+#if __has_include("../console_shellcontext_enum.h")
+# include "../console_shellcontext_enum.h"
+#endif
 };
 
 class App;
