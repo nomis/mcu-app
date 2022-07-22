@@ -91,6 +91,8 @@ private:
 
 #if __has_include("../config_class.h")
 # include "../config_class.h"
+#else
+# define MCU_APP_CONFIG_DATA
 #endif
 };
 
