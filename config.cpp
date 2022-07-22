@@ -135,7 +135,7 @@ bool Config::loaded_ = false;
 Config::Config(bool mount) {
 	if (!unavailable_ && !mounted_ && mount) {
 		logger_.info(F("Mounting filesystem"));
-		if (FS.begin()) {
+		if (FS.begin(true)) {
 			logger_.info(F("Mounted filesystem"));
 			mounted_ = true;
 		} else {
@@ -175,7 +175,7 @@ void Config::syslog_host(const std::string &syslog_host) {
 void Config::commit() {
 	if (!unavailable_ && !mounted_) {
 		logger_.info(F("Mounting filesystem"));
-		if (FS.begin()) {
+		if (FS.begin(true)) {
 			logger_.info(F("Mounted filesystem"));
 			mounted_ = true;
 		} else {

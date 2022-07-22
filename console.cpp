@@ -178,20 +178,14 @@ static void setup_builtin_commands(std::shared_ptr<Commands> &commands) {
 
 	commands->add_command(ShellContext::MAIN, CommandFlags::ADMIN | CommandFlags::LOCAL, flash_string_vector{F_(mkfs)},
 			[] (Shell &shell, const std::vector<std::string> &arguments __attribute__((unused))) {
-		if (FS.begin()) {
-			shell.logger().warning("Formatting filesystem");
-			if (FS.format()) {
-				auto msg = F("Formatted filesystem");
-				shell.logger().warning(msg);
-				shell.println(msg);
-			} else {
-				auto msg = F("Error formatting filesystem");
-				shell.logger().emerg(msg);
-				shell.println(msg);
-			}
+		shell.logger().warning("Formatting filesystem");
+		if (FS.format()) {
+			auto msg = F("Formatted filesystem");
+			shell.logger().warning(msg);
+			shell.println(msg);
 		} else {
-			auto msg = F("Unable to mount filesystem");
-			shell.logger().alert(msg);
+			auto msg = F("Error formatting filesystem");
+			shell.logger().emerg(msg);
 			shell.println(msg);
 		}
 	});
