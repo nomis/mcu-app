@@ -121,7 +121,7 @@ void Network::sta_mode_connected(arduino_event_id_t event, arduino_event_info_t 
 void Network::sta_mode_disconnected(arduino_event_id_t event, arduino_event_info_t info) {
 	const auto &conn = info.wifi_sta_disconnected;
 
-	logger_.info(F("Disconnected from %s (%02X:%02X:%02X:%02X:%02X:%02X) reason=%d"),
+	logger_.info(F("Disconnected from %*s (%02X:%02X:%02X:%02X:%02X:%02X) reason=%d"),
 		conn.ssid_len, conn.ssid,
 		conn.bssid[0], conn.bssid[1], conn.bssid[2], conn.bssid[3], conn.bssid[4], conn.bssid[5],
 		conn.reason);
