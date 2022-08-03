@@ -25,4 +25,21 @@ namespace app {
 
 static constexpr auto &FS = LittleFS;
 
+inline bool FS_begin(bool formatOnFail) {
+	bool ret;
+#if defined(ARDUINO_ARCH_ESP8266)
+	ret = FS.begin();
+	if (!ret && formatOnFail) {
+		if (FS.format()) {
+			ret = FS.begin();
+		}
+	}
+#elif defined(ARDUINO_ARCH_ESP32)
+	ret = FS.begin(formatOnFail);
+#else
+# error "Unknown arch"
+#endif
+	return ret;
+}
+
 } // namespace app
