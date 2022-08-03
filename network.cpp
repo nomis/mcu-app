@@ -29,6 +29,7 @@
 #  include <lwip/dhcp6.h>
 #  include <lwip/nd6.h>
 # endif
+# include <lwip/apps/sntp.h>
 #elif defined(ARDUINO_ARCH_ESP32)
 # include <WiFi.h>
 # include <esp_wifi.h>
@@ -37,9 +38,7 @@
 # if LWIP_IPV6
 #  include <lwip/nd6.h>
 # endif
-# ifdef MANUAL_NTP
-#  include <lwip/apps/sntp.h>
-# endif
+# include <lwip/apps/sntp.h>
 #else
 # error "Unknown arch"
 #endif
@@ -77,6 +76,8 @@ void Network::start() {
 
 # ifdef MANUAL_NTP
 	configure_ntp();
+# else
+	sntp_servermode_dhcp(1);
 # endif
 #else
 # error "Unknown arch"
@@ -170,6 +171,7 @@ void Network::configure_ntp() {
 		if (sntp_enabled()) {
 			sntp_stop();
 		}
+		sntp_servermode_dhcp(0);
 		sntp_setoperatingmode(SNTP_OPMODE_POLL);
 		sntp_setserver(0, &addr);
 		sntp_init();
