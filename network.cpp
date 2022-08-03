@@ -22,14 +22,21 @@
 
 #if defined(ARDUINO_ARCH_ESP8266)
 # include <ESP8266WiFi.h>
+# include <lwip/netif.h>
+# include <lwip/etharp.h>
 # if LWIP_IPV6
-#  include <lwip/netif.h>
 #  include <lwip/ip6_addr.h>
 #  include <lwip/dhcp6.h>
+#  include <lwip/nd6.h>
 # endif
 #elif defined(ARDUINO_ARCH_ESP32)
 # include <WiFi.h>
 # include <esp_wifi.h>
+# include <lwip/netif.h>
+# include <lwip/etharp.h>
+# if LWIP_IPV6
+#  include <lwip/nd6.h>
+# endif
 # ifdef MANUAL_NTP
 #  include <lwip/apps/sntp.h>
 # endif
@@ -92,6 +99,11 @@ void Network::sta_mode_connected(const WiFiEventStationModeConnected &event) {
 }
 
 void Network::sta_mode_disconnected(const WiFiEventStationModeDisconnected &event) {
+	etharp_cleanup_netif(netif_default);
+# if LWIP_IPV6
+	nd6_clear_destination_cache();
+# endif
+
 	logger_.info(F("Disconnected from %s (%02X:%02X:%02X:%02X:%02X:%02X) reason=%d"),
 			event.ssid.c_str(),
 			event.bssid[0], event.bssid[1], event.bssid[2], event.bssid[3], event.bssid[4], event.bssid[5],
@@ -120,6 +132,11 @@ void Network::sta_mode_connected(arduino_event_id_t event, arduino_event_info_t 
 
 void Network::sta_mode_disconnected(arduino_event_id_t event, arduino_event_info_t info) {
 	const auto &conn = info.wifi_sta_disconnected;
+
+	etharp_cleanup_netif(netif_default);
+# if LWIP_IPV6
+	nd6_clear_destination_cache();
+# endif
 
 	logger_.info(F("Disconnected from %*s (%02X:%02X:%02X:%02X:%02X:%02X) reason=%d"),
 		conn.ssid_len, conn.ssid,
