@@ -43,6 +43,7 @@
 #include "console.h"
 #include "console_stream.h"
 #include "network.h"
+#include "util.h"
 
 #ifndef APP_NAME
 # error "APP_NAME not defined"
@@ -80,8 +81,12 @@ void App::start() {
 #if defined(ARDUINO_ARCH_ESP8266)
 	logger_.info(F("Reset: %s"), ESP.getResetInfo().c_str());
 #elif defined(ARDUINO_ARCH_ESP32)
-	logger_.info(F("Reset: %u/%u"), rtc_get_reset_reason(0), rtc_get_reset_reason(1));
-	logger_.info(F("Wake: %u"), rtc_get_wakeup_cause());
+	logger_.info(F("Reset: %u/%u (%s/%s)"),
+		rtc_get_reset_reason(0), rtc_get_reset_reason(1),
+		reset_reason_string(rtc_get_reset_reason(0)).c_str(),
+		reset_reason_string(rtc_get_reset_reason(1)).c_str());
+	logger_.info(F("Wake: %u (%s)"), rtc_get_wakeup_cause(),
+		wakeup_cause_string(rtc_get_wakeup_cause()).c_str());
 #else
 # error "unknown arch"
 #endif
@@ -97,9 +102,10 @@ void App::start() {
 		}
 	}
 
-	logger_.info(F("OTA partition: %s %d"), part ? part->label : nullptr, state);
+	logger_.info(F("OTA partition: %s %d (%S)"), part ? part->label : nullptr, state, ota_state_string(state));
 	if (desc != nullptr) {
 		logger_.info(F("App build: %s %s"), desc->date, desc->time);
+		logger_.info(F("App hash: %s"), hex_string(desc->app_elf_sha256, sizeof(desc->app_elf_sha256)).c_str());
 	}
 #endif
 

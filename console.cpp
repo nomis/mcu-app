@@ -43,6 +43,7 @@
 #include "console_stream.h"
 #include "fs.h"
 #include "network.h"
+#include "util.h"
 
 using ::uuid::flash_string_vector;
 using ::uuid::console::Commands;
@@ -498,37 +499,15 @@ static void setup_builtin_commands(std::shared_ptr<Commands> &commands) {
 			if (part == boot) {
 				shell.print(F(" [boot]"));
 			}
-			switch (state) {
-			case ESP_OTA_IMG_NEW:
-				shell.print(F(" new"));
-				break;
-			case ESP_OTA_IMG_PENDING_VERIFY:
-				shell.print(F(" pending-verify"));
-				break;
-			case ESP_OTA_IMG_VALID:
-				shell.print(F(" valid"));
-				break;
-			case ESP_OTA_IMG_INVALID:
-				shell.print(F(" invalid"));
-				break;
-			case ESP_OTA_IMG_ABORTED:
-				shell.print(F(" aborted"));
-				break;
-			case ESP_OTA_IMG_UNDEFINED:
-				shell.print(F(" undefined"));
-				break;
-			}
-			shell.println();
+			shell.print(' ');
+			shell.println(ota_state_string(state));
 
 			if (!esp_ota_get_partition_description(part, &desc)) {
 				shell.printfln(F("    Name:      %s"), desc.project_name);
 				shell.printfln(F("    Version:   %s"), desc.version);
 				shell.printfln(F("    Timestamp: %s %s"), desc.date, desc.time);
 				shell.print(F("    Hash:      "));
-				for (int i = 0; i < sizeof(desc.app_elf_sha256); i++) {
-					shell.printf(F("%02x"), desc.app_elf_sha256[i]);
-				}
-				shell.println();
+				shell.println(HexPrintable(desc.app_elf_sha256, sizeof(desc.app_elf_sha256)));
 			}
 		}
 	});
