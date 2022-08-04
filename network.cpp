@@ -161,9 +161,6 @@ void Network::sta_mode_got_ip(arduino_event_id_t event, arduino_event_info_t inf
 
 	configure_ntp();
 }
-#else
-# error "Unknown arch"
-#endif
 
 void Network::configure_ntp() {
 	if (sntp_enabled()) {
@@ -180,6 +177,9 @@ void Network::configure_ntp() {
 		sntp_init();
 	}
 }
+#else
+# error "Unknown arch"
+#endif
 
 void Network::connect() {
 	Config config;
