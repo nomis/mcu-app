@@ -74,11 +74,15 @@ void Network::start() {
 		std::placeholders::_1, std::placeholders::_2),
 		ARDUINO_EVENT_WIFI_STA_GOT_IP);
 
+	if (sntp_enabled()) {
+		sntp_stop();
+	}
 # ifdef MANUAL_NTP
-	configure_ntp();
+	sntp_servermode_dhcp(0);
 # else
 	sntp_servermode_dhcp(1);
 # endif
+	sntp_setoperatingmode(SNTP_OPMODE_POLL);
 #else
 # error "Unknown arch"
 #endif
@@ -143,6 +147,8 @@ void Network::sta_mode_disconnected(arduino_event_id_t event, arduino_event_info
 		conn.ssid_len, conn.ssid,
 		conn.bssid[0], conn.bssid[1], conn.bssid[2], conn.bssid[3], conn.bssid[4], conn.bssid[5],
 		conn.reason);
+
+	configure_ntp();
 }
 
 void Network::sta_mode_got_ip(arduino_event_id_t event, arduino_event_info_t info) {
@@ -153,36 +159,27 @@ void Network::sta_mode_got_ip(arduino_event_id_t event, arduino_event_info_t inf
 		uuid::printable_to_string(IPAddress(got_ip.ip_info.netmask.addr)).c_str(),
 		uuid::printable_to_string(IPAddress(got_ip.ip_info.gw.addr)).c_str());
 
-# ifdef MANUAL_NTP
 	configure_ntp();
-# endif
 }
 #else
 # error "Unknown arch"
 #endif
 
-#ifdef MANUAL_NTP
 void Network::configure_ntp() {
+	if (sntp_enabled()) {
+		sntp_stop();
+	}
+
 	if (WiFi.status() == WL_CONNECTED) {
+#ifdef MANUAL_NTP
 		ip_addr_t addr = IPADDR4_INIT(WiFi.gatewayIP());
 
-		logger_.info(F("Configure NTP server: %s"), uuid::printable_to_string(WiFi.gatewayIP()).c_str());
-
-		if (sntp_enabled()) {
-			sntp_stop();
-		}
-		sntp_servermode_dhcp(0);
-		sntp_setoperatingmode(SNTP_OPMODE_POLL);
 		sntp_setserver(0, &addr);
+#endif
+
 		sntp_init();
-	} else {
-		if (sntp_enabled()) {
-			logger_.info(F("Stop SNTP client"));
-			sntp_stop();
-		}
 	}
 }
-#endif
 
 void Network::connect() {
 	Config config;

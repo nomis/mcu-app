@@ -52,15 +52,12 @@ private:
 	void sta_mode_disconnected(arduino_event_id_t event, arduino_event_info_t info);
 	void sta_mode_got_ip(arduino_event_id_t event, arduino_event_info_t info);
 
+	void configure_ntp();
 # ifndef MANUAL_NTP
 #  if !defined(CONFIG_LWIP_DHCP_GET_NTP_SRV) || CONFIG_LWIP_DHCP_GET_NTP_SRV != 1
 #   define MANUAL_NTP
 #  endif
 # endif
-# ifdef MANUAL_NTP
-	void configure_ntp();
-# endif
-
 #else
 # error "Unknown arch"
 #endif
