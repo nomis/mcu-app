@@ -35,7 +35,6 @@
 #include <uuid/common.h>
 #include <uuid/console.h>
 #include <uuid/log.h>
-#include <uuid/modbus.h>
 #include <uuid/syslog.h>
 #include <uuid/telnet.h>
 
