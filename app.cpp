@@ -51,6 +51,13 @@
 # error "APP_VERSION not defined"
 #endif
 
+#ifdef ARDUINO_ARCH_ESP32
+static_assert(uuid::thread_safe, "uuid-common must be thread-safe");
+static_assert(uuid::log::thread_safe, "uuid-log must be thread-safe");
+static_assert(uuid::syslog::thread_safe, "uuid-syslog must be thread-safe");
+static_assert(uuid::console::thread_safe, "uuid-console must be thread-safe");
+#endif
+
 static const char __pstr__logger_name[] __attribute__((__aligned__(sizeof(int)))) PROGMEM = APP_NAME;
 
 namespace app {
