@@ -21,18 +21,20 @@
 # extra_scripts = post:app-tls-size.py
 
 import argparse
+import collections
 import re
 import subprocess
 import sys
 
-RE_ELF_SYMBOL = re.compile(r"^\s*(?P<num>\d+):\s+(?P<value>\w+)\s+(?P<size>\d+)\s+(?P<type>\w+)\s+")
+Symbol = collections.namedtuple("Symbol", ["value", "size", "line"])
+RE_ELF_SYMBOL = re.compile(r"^\s*(?P<num>\w+):\s+(?P<value>\w+)\s+(?P<size>\w+)\s+(?P<type>\w+)\s+")
 
 def print_tls_size(fw_elf):
 	header = True
 	lines = subprocess.run(["readelf", "-sdW", fw_elf],
 			check=True, universal_newlines=True, stdout=subprocess.PIPE
 		).stdout.strip().split("\n")
-	size = 0
+	syms = set()
 
 	for line in lines:
 		match = RE_ELF_SYMBOL.match(line)
@@ -40,16 +42,25 @@ def print_tls_size(fw_elf):
 			header = False
 
 			if match["type"] == "TLS":
-				print(line)
-				size += int(match["size"])
+				syms.add(Symbol(int(match["value"], 16), int(match["size"]), line))
 		elif header:
 			print(line)
+
+	if syms:
+		syms = list(syms)
+		syms.sort()
+		size = (syms[-1].value + syms[-1].size) - syms[0].value
+	else:
+		size = 0
+
+	for sym in syms:
+		print(sym.line)
 
 	print()
 	print(f"Total Thread-Local Storage size: {size} bytes")
 
-def after_fw_bin(source, target, env):
-	fw_elf = str(source[0])
+def after_fw_elf(source, target, env):
+	fw_elf = str(target[0])
 	print_tls_size(fw_elf)
 
 if __name__ == "__main__":
@@ -61,4 +72,4 @@ if __name__ == "__main__":
 elif __name__ == "SCons.Script":
 	Import("env")
 
-	env.AddPostAction("$BUILD_DIR/${PROGNAME}.bin", after_fw_bin)
+	env.AddPostAction("$BUILD_DIR/${PROGNAME}.elf", after_fw_elf)
