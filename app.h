@@ -52,6 +52,7 @@ private:
 
 public:
 	~App() = default;
+	virtual void init();
 	virtual void start();
 	virtual void loop();
 

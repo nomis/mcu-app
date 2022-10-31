@@ -74,9 +74,13 @@ App::App() : telnet_([this] (Stream &stream, const IPAddress &addr, uint16_t por
 
 }
 
-void App::start() {
+void App::init() {
 	syslog_.start();
 	syslog_.maximum_log_messages(100);
+}
+
+void App::start() {
+	init();
 
 	if (CONSOLE_PIN >= 0) {
 		pinMode(CONSOLE_PIN, INPUT_PULLUP);
