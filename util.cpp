@@ -75,6 +75,7 @@ std::string reset_reason_string(RESET_REASON reason) {
 	RR_STR(TG1WDT_CPU)
 	RR_STR(SUPER_WDT)
 	RR_STR(GLITCH_RTC)
+	RR_STR(EFUSE)
 #undef RR_STR
 	}
 
