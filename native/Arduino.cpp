@@ -19,6 +19,7 @@
 
 #include <Arduino.h>
 #include <sched.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdarg.h>
 #include <stdlib.h>
@@ -38,6 +39,10 @@ static void fix_termios(void) {
 	tcsetattr(STDIN_FILENO, TCSANOW, &tm_orig);
 }
 
+static void signal_handler(int num) {
+	raise(SIGQUIT);
+}
+
 int main(int argc __attribute__((unused)), char *argv[] __attribute__((unused))) {
 	struct timespec ts;
 	struct termios tm_new;
@@ -48,6 +53,11 @@ int main(int argc __attribute__((unused)), char *argv[] __attribute__((unused)))
 	tcgetattr(STDIN_FILENO, &tm_orig);
 	tm_new = tm_orig;
 	cfmakeraw(&tm_new);
+	tm_new.c_lflag |= ISIG;
+	tm_new.c_cc[VINTR] = _POSIX_VDISABLE;
+	tm_new.c_cc[VQUIT] = _POSIX_VDISABLE;
+	tm_new.c_cc[VSUSP] = tm_orig.c_cc[VSUSP];
+	signal(SIGTSTP, signal_handler);
 	atexit(fix_termios);
 	tcsetattr(STDIN_FILENO, TCSANOW, &tm_new);
 
