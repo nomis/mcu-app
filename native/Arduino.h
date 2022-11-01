@@ -87,6 +87,8 @@ public:
 				return '\x04';
 			} else if (ret == 1) {
 				return c;
+			} else {
+				exit(1);
 			}
 		}
 
@@ -101,11 +103,19 @@ public:
 	}
 
 	size_t write(uint8_t c) override {
-		return ::write(STDOUT_FILENO, &c, 1);
+		if (::write(STDOUT_FILENO, &c, 1) == 1) {
+			return 1;
+		} else {
+			exit(1);
+		}
 	}
 
 	size_t write(const uint8_t *buffer, size_t size) {
-		return ::write(STDOUT_FILENO, buffer, size);
+		if (::write(STDOUT_FILENO, buffer, size) == (ssize_t)size) {
+			return size;
+		} else {
+			exit(1);
+		}
 	}
 
 private:
