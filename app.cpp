@@ -28,6 +28,10 @@
 # include <rom/rtc.h>
 #endif
 
+#ifdef ENV_NATIVE
+# include <stdlib.h>
+#endif
+
 #include <initializer_list>
 #include <memory>
 #include <vector>
@@ -35,8 +39,10 @@
 #include <uuid/common.h>
 #include <uuid/console.h>
 #include <uuid/log.h>
-#include <uuid/syslog.h>
-#include <uuid/telnet.h>
+#ifndef ENV_NATIVE
+# include <uuid/syslog.h>
+# include <uuid/telnet.h>
+#endif
 
 #include "config.h"
 #include "console.h"
@@ -68,20 +74,31 @@ namespace app {
 
 uuid::log::Logger App::logger_{FPSTR(__pstr__logger_name), uuid::log::Facility::KERN};
 
-App::App() : telnet_([this] (Stream &stream, const IPAddress &addr, uint16_t port) -> std::shared_ptr<uuid::console::Shell> {
-		return std::make_shared<app::AppStreamConsole>(*this, stream, addr, port);
-	}) {
+App::App()
+#ifndef ENV_NATIVE
+		: telnet_([this] (Stream &stream, const IPAddress &addr, uint16_t port) -> std::shared_ptr<uuid::console::Shell> {
+			return std::make_shared<app::AppStreamConsole>(*this, stream, addr, port);
+		})
+#endif
+	{
 
 }
 
 void App::init() {
+#ifdef ENV_NATIVE
+	shell_ = std::make_shared<AppStreamConsole>(*this, serial_console_, true);
+	shell_->start();
+	shell_->log_level(uuid::log::Level::TRACE);
+#else
 	syslog_.start();
 	syslog_.maximum_log_messages(100);
+#endif
 }
 
 void App::start() {
 	init();
 
+#ifndef ENV_NATIVE
 	if (CONSOLE_PIN >= 0) {
 		pinMode(CONSOLE_PIN, INPUT_PULLUP);
 		delay(1);
@@ -90,6 +107,7 @@ void App::start() {
 	} else {
 		local_console_ = true;
 	}
+#endif
 
 	logger_.info(F("System startup (" APP_NAME " " APP_VERSION ")"));
 #if defined(ARDUINO_ARCH_ESP8266)
@@ -101,11 +119,12 @@ void App::start() {
 		reset_reason_string(rtc_get_reset_reason(1)).c_str());
 	logger_.info(F("Wake: %u (%s)"), rtc_get_wakeup_cause(),
 		wakeup_cause_string(rtc_get_wakeup_cause()).c_str());
+#elif defined(ENV_NATIVE)
 #else
 # error "unknown arch"
 #endif
 
-#if !defined(ARDUINO_ARCH_ESP8266)
+#if !defined(ENV_NATIVE) && !defined(ARDUINO_ARCH_ESP8266)
 	const esp_partition_t *part = esp_ota_get_running_partition();
 	const esp_app_desc_t* desc = esp_ota_get_app_description();
 	esp_ota_img_states_t state = ESP_OTA_IMG_UNDEFINED;
@@ -123,6 +142,7 @@ void App::start() {
 	}
 #endif
 
+#ifndef ENV_NATIVE
 	Config config;
 	if (config.wifi_ssid().empty()) {
 		local_console_ = true;
@@ -149,12 +169,15 @@ void App::start() {
 	if (local_console_) {
 		shell_prompt();
 	}
+#endif
 }
 
 void App::loop() {
 	uuid::loop();
+#ifndef ENV_NATIVE
 	syslog_.loop();
 	telnet_.loop();
+#endif
 	uuid::console::Shell::loop_all();
 
 #if defined(ARDUINO_ARCH_ESP8266)
@@ -163,6 +186,11 @@ void App::loop() {
 	}
 #endif
 
+#ifdef ENV_NATIVE
+	if (!shell_->running()) {
+		::exit(0);
+	}
+#else
 	if (local_console_) {
 		if (shell_) {
 			if (!shell_->running()) {
@@ -177,6 +205,7 @@ void App::loop() {
 			}
 		}
 	}
+#endif
 }
 
 void App::shell_prompt() {
@@ -184,6 +213,7 @@ void App::shell_prompt() {
 	serial_console_.println(F("Press ^C to activate this console"));
 }
 
+#ifndef ENV_NATIVE
 void App::config_syslog() {
 	Config config;
 	IPAddress addr;
@@ -197,6 +227,7 @@ void App::config_syslog() {
 	syslog_.mark_interval(config.syslog_mark_interval());
 	syslog_.destination(addr);
 }
+#endif
 
 #if defined(ARDUINO_ARCH_ESP8266)
 void App::config_ota() {

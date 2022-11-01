@@ -18,7 +18,9 @@
 
 #pragma once
 
-#include <ArduinoJson.hpp>
+#ifndef ENV_NATIVE
+# include <ArduinoJson.hpp>
+#endif
 
 #include <string>
 
@@ -85,9 +87,13 @@ private:
 #endif
 
 	bool read_config(const std::string &filename, bool load = true);
+#ifndef ENV_NATIVE
 	void read_config(const ArduinoJson::JsonDocument &doc);
+#endif
 	bool write_config(const std::string &filename);
+#ifndef ENV_NATIVE
 	void write_config(ArduinoJson::JsonDocument &doc);
+#endif
 
 #if __has_include("../config_class.h")
 # include "../config_class.h"

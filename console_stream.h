@@ -33,18 +33,24 @@ namespace app {
 class AppStreamConsole: public uuid::console::StreamConsole, public APP_SHELL_TYPE {
 public:
 	AppStreamConsole(App &app, Stream &stream, bool local);
+#ifndef ENV_NATIVE
 	AppStreamConsole(App &app, Stream &stream, const IPAddress &addr, uint16_t port);
+#endif
 	~AppStreamConsole() override;
 
 	std::string console_name();
 
 private:
+#ifndef ENV_NATIVE
 	static std::vector<bool> ptys_;
+#endif
 
 	std::string name_;
+#ifndef ENV_NATIVE
 	size_t pty_;
 	IPAddress addr_;
 	uint16_t port_;
+#endif
 };
 
 } // namespace app

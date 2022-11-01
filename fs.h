@@ -17,6 +17,7 @@
  */
 
 #pragma once
+#ifndef ENV_NATIVE
 
 #include <FS.h>
 #include <LittleFS.h>
@@ -43,3 +44,4 @@ inline bool FS_begin(bool formatOnFail) {
 }
 
 } // namespace app
+#endif

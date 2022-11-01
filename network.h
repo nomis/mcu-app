@@ -17,6 +17,7 @@
  */
 
 #pragma once
+#ifndef ENV_NATIVE
 
 #include <Arduino.h>
 #ifdef ARDUINO_ARCH_ESP8266
@@ -64,3 +65,4 @@ private:
 };
 
 } // namespace app
+#endif

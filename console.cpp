@@ -27,6 +27,10 @@
 # include <rom/rtc.h>
 #endif
 
+#ifdef ENV_NATIVE
+# include <sys/time.h>
+#endif
+
 #include <array>
 #include <cmath>
 #include <cstdio>
@@ -58,7 +62,9 @@ using LogFacility = ::uuid::log::Facility;
 namespace app {
 
 #pragma GCC diagnostic push
-#pragma GCC diagnostic error "-Wunused-const-variable"
+#ifndef ENV_NATIVE
+# pragma GCC diagnostic error "-Wunused-const-variable"
+#endif
 #if !defined(ARDUINO_ARCH_ESP8266)
 MAKE_PSTR_WORD(bad)
 #endif
@@ -172,6 +178,7 @@ static void setup_builtin_commands(std::shared_ptr<Commands> &commands) {
 
 	commands->add_command(ShellContext::MAIN, CommandFlags::USER, flash_string_vector{F_(logout)}, AppShell::main_logout_function);
 
+#ifndef ENV_NATIVE
 	commands->add_command(ShellContext::MAIN, CommandFlags::ADMIN | CommandFlags::LOCAL, flash_string_vector{F_(mkfs)},
 			[] (Shell &shell, const std::vector<std::string> &arguments __attribute__((unused))) {
 		shell.logger().warning("Formatting filesystem");
@@ -185,8 +192,9 @@ static void setup_builtin_commands(std::shared_ptr<Commands> &commands) {
 			shell.println(msg);
 		}
 	});
+#endif
 
-#if !defined(ARDUINO_ARCH_ESP8266)
+#if !defined(ENV_NATIVE) && !defined(ARDUINO_ARCH_ESP8266)
 	commands->add_command(ShellContext::MAIN, CommandFlags::ADMIN, flash_string_vector{F_(ota), F_(bad)},
 			[] (Shell &shell, const std::vector<std::string> &arguments __attribute__((unused))) {
 		esp_err_t err = esp_ota_mark_app_invalid_rollback_and_reboot();
@@ -319,10 +327,12 @@ static void setup_builtin_commands(std::shared_ptr<Commands> &commands) {
 		});
 	});
 
+#ifndef ENV_NATIVE
 	commands->add_command(ShellContext::MAIN, CommandFlags::ADMIN, flash_string_vector{F_(restart)},
 		[] (Shell &shell __attribute__((unused)), const std::vector<std::string> &arguments __attribute__((unused))) {
 			ESP.restart();
 	});
+#endif
 
 	commands->add_command(ShellContext::MAIN, CommandFlags::USER, flash_string_vector{F_(set)},
 			[] (Shell &shell, const std::vector<std::string> &arguments __attribute__((unused))) {
@@ -351,8 +361,9 @@ static void setup_builtin_commands(std::shared_ptr<Commands> &commands) {
 			config.hostname(arguments.front());
 		}
 		config.commit();
-
+#ifndef ENV_NATIVE
 		to_app(shell).config_syslog();
+#endif
 	});
 
 #if defined(ARDUINO_ARCH_ESP8266)
@@ -446,6 +457,7 @@ static void setup_builtin_commands(std::shared_ptr<Commands> &commands) {
 		}
 	});
 
+#ifndef ENV_NATIVE
 	commands->add_command(ShellContext::MAIN, CommandFlags::USER, flash_string_vector{F_(show), F_(memory)},
 			[] (Shell &shell, const std::vector<std::string> &arguments __attribute__((unused))) {
 #if defined(ARDUINO_ARCH_ESP8266)
@@ -554,6 +566,7 @@ static void setup_builtin_commands(std::shared_ptr<Commands> &commands) {
 # error "Unknown arch"
 #endif
 	});
+#endif
 
 	commands->add_command(ShellContext::MAIN, CommandFlags::USER, flash_string_vector{F_(show), F_(uptime)},
 			[] (Shell &shell, const std::vector<std::string> &arguments __attribute__((unused))) {
@@ -609,6 +622,7 @@ static void setup_builtin_commands(std::shared_ptr<Commands> &commands) {
 		}
 	});
 
+#ifndef ENV_NATIVE
 	commands->add_command(ShellContext::MAIN, CommandFlags::ADMIN, flash_string_vector{F_(sync)},
 			[] (Shell &shell, const std::vector<std::string> &arguments __attribute__((unused))) {
 		auto msg = F("Unable to mount filesystem");
@@ -697,6 +711,7 @@ static void setup_builtin_commands(std::shared_ptr<Commands> &commands) {
 			[] (Shell &shell, const std::vector<std::string> &arguments __attribute__((unused))) {
 		to_app(shell).network_.print_status(shell);
 	});
+#endif
 }
 
 __attribute__((weak)) void setup_commands(std::shared_ptr<Commands> &commands __attribute__((unused))) {}
@@ -737,10 +752,12 @@ std::string AppShell::hostname_text() {
 	std::string hostname = config.hostname();
 
 	if (hostname.empty()) {
-#ifdef ARDUINO_ARCH_ESP8266
+#if defined(ARDUINO_ARCH_ESP8266)
 		hostname.resize(20, '\0');
 
 		::snprintf_P(&hostname[0], hostname.capacity() + 1, PSTR("esp-%08x"), ESP.getChipId());
+#elif defined(ENV_NATIVE)
+		hostname = "native";
 #else
 		hostname = uuid::read_flash_string(F("esp-"));
 		String mac = WiFi.macAddress();
@@ -792,20 +809,27 @@ void AppShell::main_exit_admin_function(Shell &shell, const std::vector<std::str
 	shell.remove_flags(CommandFlags::ADMIN);
 };
 
+#ifndef ENV_NATIVE
 std::vector<bool> AppStreamConsole::ptys_;
+#endif
 
 AppStreamConsole::AppStreamConsole(App &app, Stream &stream, bool local)
 		: uuid::console::Shell(commands_, ShellContext::MAIN,
 			local ? (CommandFlags::USER | CommandFlags::LOCAL) : CommandFlags::USER),
 		  uuid::console::StreamConsole(stream),
 		  APP_SHELL_TYPE(app),
-		  name_(uuid::read_flash_string(F("ttyS0"))),
+		  name_(uuid::read_flash_string(F("ttyS0")))
+#ifndef ENV_NATIVE
+		  ,
 		  pty_(std::numeric_limits<size_t>::max()),
 		  addr_(),
-		  port_(0) {
+		  port_(0)
+#endif
+		{
 
 }
 
+#ifndef ENV_NATIVE
 AppStreamConsole::AppStreamConsole(App &app, Stream &stream, const IPAddress &addr, uint16_t port)
 		: uuid::console::Shell(commands_, ShellContext::MAIN, CommandFlags::USER),
 		  uuid::console::StreamConsole(stream),
@@ -829,8 +853,10 @@ AppStreamConsole::AppStreamConsole(App &app, Stream &stream, const IPAddress &ad
 	logger().info(F("Allocated console %s for connection from [%s]:%u"),
 		name_.c_str(), uuid::printable_to_string(addr_).c_str(), port_);
 }
+#endif
 
 AppStreamConsole::~AppStreamConsole() {
+#ifndef ENV_NATIVE
 	if (pty_ != SIZE_MAX) {
 		logger().info(F("Shutdown console %s for connection from [%s]:%u"),
 			name_.c_str(), uuid::printable_to_string(addr_).c_str(), port_);
@@ -838,6 +864,7 @@ AppStreamConsole::~AppStreamConsole() {
 		ptys_[pty_] = false;
 		ptys_.shrink_to_fit();
 	}
+#endif
 }
 
 std::string AppStreamConsole::console_name() {

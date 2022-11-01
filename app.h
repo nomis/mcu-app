@@ -24,8 +24,10 @@
 #include <memory>
 #include <vector>
 
-#include <uuid/syslog.h>
-#include <uuid/telnet.h>
+#ifndef ENV_NATIVE
+# include <uuid/syslog.h>
+# include <uuid/telnet.h>
+#endif
 
 #include "console.h"
 #include "network.h"
@@ -46,6 +48,7 @@ private:
 
 #if defined(ARDUINO_ESP8266_WEMOS_D1MINI) || defined(ESP8266_WEMOS_D1MINI)
 #elif defined(ARDUINO_LOLIN_S2_MINI)
+#elif defined(ENV_NATIVE)
 #else
 # error "Unknown board"
 #endif
@@ -56,12 +59,16 @@ public:
 	virtual void start();
 	virtual void loop();
 
+#ifndef ENV_NATIVE
 	void config_syslog();
+#endif
 #ifdef ARDUINO_ARCH_ESP8266
 	void config_ota();
 #endif
 
+#ifndef ENV_NATIVE
 	Network network_;
+#endif
 
 protected:
 	static uuid::log::Logger logger_;
@@ -73,8 +80,10 @@ protected:
 private:
 	void shell_prompt();
 
+#ifndef ENV_NATIVE
 	uuid::syslog::SyslogService syslog_;
 	uuid::telnet::TelnetService telnet_;
+#endif
 	std::shared_ptr<AppShell> shell_;
 	bool local_console_;
 #ifdef ARDUINO_ARCH_ESP8266

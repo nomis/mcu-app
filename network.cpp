@@ -16,6 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifndef ENV_NATIVE
 #include "network.h"
 
 #include <Arduino.h>
@@ -314,3 +315,4 @@ void Network::print_status(uuid::console::Shell &shell) {
 }
 
 } // namespace app
+#endif

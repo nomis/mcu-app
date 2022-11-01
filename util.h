@@ -46,7 +46,7 @@ std::string hex_string(const uint8_t *buf, size_t len);
 std::string reset_reason_string(RESET_REASON reason);
 std::string wakeup_cause_string(WAKEUP_REASON cause);
 #endif
-#if !defined(ARDUINO_ARCH_ESP8266)
+#if !defined(ENV_NATIVE) && !defined(ARDUINO_ARCH_ESP8266)
 const __FlashStringHelper *ota_state_string(esp_ota_img_states_t state);
 #endif
 
