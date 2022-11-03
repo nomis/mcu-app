@@ -36,7 +36,11 @@
 #include "app.h"
 #include "fs.h"
 
-#define MAKE_PSTR(string_name, string_literal) static const char __pstr__##string_name[] __attribute__((__aligned__(sizeof(int)))) PROGMEM = string_literal;
+#ifndef PSTR_ALIGN
+# define PSTR_ALIGN 4
+#endif
+
+#define MAKE_PSTR(string_name, string_literal) static const char __pstr__##string_name[] __attribute__((__aligned__(PSTR_ALIGN))) PROGMEM = string_literal;
 
 namespace app {
 #ifdef ARDUINO_ARCH_ESP8266
@@ -128,10 +132,10 @@ MCU_APP_INTERNAL_CONFIG_DATA
 #undef MCU_APP_CONFIG_CUSTOM
 #undef MCU_APP_CONFIG_ENUM
 
-static const char __pstr__config_filename[] __attribute__((__aligned__(sizeof(int)))) PROGMEM = "/config.msgpack";
-static const char __pstr__config_backup_filename[] __attribute__((__aligned__(sizeof(int)))) PROGMEM = "/config.msgpack~";
+static const char __pstr__config_filename[] __attribute__((__aligned__(PSTR_ALIGN))) PROGMEM = "/config.msgpack";
+static const char __pstr__config_backup_filename[] __attribute__((__aligned__(PSTR_ALIGN))) PROGMEM = "/config.msgpack~";
 
-static const char __pstr__logger_name[] __attribute__((__aligned__(sizeof(int)))) PROGMEM = "config";
+static const char __pstr__logger_name[] __attribute__((__aligned__(PSTR_ALIGN))) PROGMEM = "config";
 uuid::log::Logger Config::logger_{FPSTR(__pstr__logger_name), uuid::log::Facility::DAEMON};
 
 bool Config::mounted_ = false;

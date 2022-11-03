@@ -68,7 +68,11 @@ static_assert(uuid::console::thread_safe, "uuid-console must be thread-safe");
 # endif
 #endif
 
-static const char __pstr__logger_name[] __attribute__((__aligned__(sizeof(int)))) PROGMEM = APP_NAME;
+#ifndef PSTR_ALIGN
+# define PSTR_ALIGN 4
+#endif
+
+static const char __pstr__logger_name[] __attribute__((__aligned__(PSTR_ALIGN))) PROGMEM = APP_NAME;
 
 namespace app {
 

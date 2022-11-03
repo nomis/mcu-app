@@ -48,7 +48,11 @@
 
 #include "config.h"
 
-static const char __pstr__logger_name[] __attribute__((__aligned__(sizeof(int)))) PROGMEM = "wifi";
+#ifndef PSTR_ALIGN
+# define PSTR_ALIGN 4
+#endif
+
+static const char __pstr__logger_name[] __attribute__((__aligned__(PSTR_ALIGN))) PROGMEM = "wifi";
 
 namespace app {
 

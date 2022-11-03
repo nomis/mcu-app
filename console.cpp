@@ -49,13 +49,17 @@
 #include "network.h"
 #include "util.h"
 
+#ifndef PSTR_ALIGN
+# define PSTR_ALIGN 4
+#endif
+
 using ::uuid::flash_string_vector;
 using ::uuid::console::Commands;
 using ::uuid::console::Shell;
 using LogLevel = ::uuid::log::Level;
 using LogFacility = ::uuid::log::Facility;
 
-#define MAKE_PSTR(string_name, string_literal) static const char __pstr__##string_name[] __attribute__((__aligned__(sizeof(int)))) PROGMEM = string_literal;
+#define MAKE_PSTR(string_name, string_literal) static const char __pstr__##string_name[] __attribute__((__aligned__(PSTR_ALIGN))) PROGMEM = string_literal;
 #define MAKE_PSTR_WORD(string_name) MAKE_PSTR(string_name, #string_name)
 #define F_(string_name) FPSTR(__pstr__##string_name)
 
