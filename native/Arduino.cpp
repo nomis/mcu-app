@@ -78,8 +78,8 @@ unsigned long millis() {
 
 void delay(unsigned long millis) {
 	struct timespec ts = {
-		.tv_sec = 0,
-		.tv_nsec = (long)millis * 1000000,
+		.tv_sec = (long)millis / 1000,
+		.tv_nsec = ((long)millis % 1000) * 1000000,
 	};
 
 	nanosleep(&ts, NULL);
