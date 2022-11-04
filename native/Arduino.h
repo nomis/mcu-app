@@ -125,8 +125,10 @@ private:
 extern NativeConsole Serial;
 
 unsigned long millis();
+unsigned long micros();
 
 void delay(unsigned long millis);
+void delayMicroseconds(unsigned long micros);
 
 void yield(void);
 

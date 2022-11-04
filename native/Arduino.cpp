@@ -33,6 +33,7 @@
 NativeConsole Serial;
 
 static unsigned long start_millis;
+static unsigned long start_micros;
 static struct termios tm_orig;
 
 static void fix_termios(void) {
@@ -49,6 +50,7 @@ int main(int argc __attribute__((unused)), char *argv[] __attribute__((unused)))
 
 	clock_gettime(CLOCK_MONOTONIC, &ts);
 	start_millis = ts.tv_sec * 1000 + ts.tv_nsec / 1000000;
+	start_micros = ts.tv_sec * 1000000 + ts.tv_nsec / 1000;
 
 	tcgetattr(STDIN_FILENO, &tm_orig);
 	tm_new = tm_orig;
@@ -80,6 +82,23 @@ void delay(unsigned long millis) {
 	struct timespec ts = {
 		.tv_sec = (long)millis / 1000,
 		.tv_nsec = ((long)millis % 1000) * 1000000,
+	};
+
+	nanosleep(&ts, NULL);
+}
+
+unsigned long micros() {
+	struct timespec ts;
+
+	clock_gettime(CLOCK_MONOTONIC, &ts);
+
+	return (unsigned long)(ts.tv_sec * 1000000 + ts.tv_nsec / 1000) - start_micros;
+}
+
+void delayMicroseconds(unsigned long micros) {
+	struct timespec ts = {
+		.tv_sec = (long)micros / 1000000,
+		.tv_nsec = ((long)micros % 1000000) * 1000,
 	};
 
 	nanosleep(&ts, NULL);
