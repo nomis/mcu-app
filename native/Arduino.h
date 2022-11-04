@@ -36,6 +36,8 @@
 #define PGM_P const char *
 #define PSTR(s) (__extension__({static const char __c[] = (s); &__c[0];}))
 
+#define IRAM_ATTR
+
 #define printf_P printf
 #define strlen_P strlen
 #define strncpy_P strncpy
