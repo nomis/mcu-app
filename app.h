@@ -58,6 +58,7 @@ public:
 	virtual void init();
 	virtual void start();
 	virtual void loop();
+	void exception(const __FlashStringHelper *where);
 
 #ifndef ENV_NATIVE
 	void config_syslog();

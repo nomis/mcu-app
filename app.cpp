@@ -212,6 +212,21 @@ void App::loop() {
 #endif
 }
 
+void App::exception(const __FlashStringHelper *where) {
+	uint64_t uptime = uuid::get_uptime_ms();
+
+	serial_console_.begin(SERIAL_CONSOLE_BAUD_RATE);
+
+	while (1) {
+		serial_console_.printf(
+			uuid::read_flash_string(F("%s Exception in %S at %s (" APP_NAME " " APP_VERSION ")\r\n")).c_str(),
+			uuid::log::format_timestamp_ms(uuid::get_uptime_ms()).c_str(),
+			where, uuid::log::format_timestamp_ms(uptime).c_str());
+		delay(1000);
+		::yield();
+	}
+}
+
 void App::shell_prompt() {
 	serial_console_.println();
 	serial_console_.println(F("Press ^C to activate this console"));
