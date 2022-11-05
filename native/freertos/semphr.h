@@ -58,7 +58,7 @@ static inline void vSemaphoreDelete(SemaphoreHandle_t &sem) {
 }
 
 static inline BaseType_t xSemaphoreGive(SemaphoreHandle_t &sem) {
-    std::lock_guard<std::mutex> lock{sem->mutex};
+    std::lock_guard lock{sem->mutex};
 
     if (sem->value) {
         return pdFALSE;
@@ -75,7 +75,7 @@ static inline BaseType_t xSemaphoreGiveFromISR(SemaphoreHandle_t &sem,
 }
 
 static inline BaseType_t xSemaphoreTake(SemaphoreHandle_t &sem, TickType_t ticks) {
-    std::unique_lock<std::mutex> lock{sem->mutex};
+    std::unique_lock lock{sem->mutex};
 
     if (!sem->value)
         sem->cv.wait_for(lock, std::chrono::microseconds(ticks));
