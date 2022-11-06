@@ -57,8 +57,8 @@ int main(int argc __attribute__((unused)), char *argv[] __attribute__((unused)))
 	cfmakeraw(&tm_new);
 	tm_new.c_lflag |= ISIG;
 	tm_new.c_cc[VINTR] = _POSIX_VDISABLE;
-	tm_new.c_cc[VQUIT] = _POSIX_VDISABLE;
-	tm_new.c_cc[VSUSP] = tm_orig.c_cc[VSUSP];
+	tm_new.c_cc[VQUIT] = tm_orig.c_cc[VQUIT];
+	tm_new.c_cc[VSUSP] = _POSIX_VDISABLE;
 	signal(SIGTSTP, signal_handler);
 	atexit(fix_termios);
 	tcsetattr(STDIN_FILENO, TCSANOW, &tm_new);

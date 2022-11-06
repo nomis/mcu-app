@@ -89,8 +89,12 @@ public:
 			int ret = ::read(STDIN_FILENO, &c, 1);
 
 			if (ret == 0) {
+				/* Ctrl+D */
 				return '\x04';
 			} else if (ret == 1) {
+				/* Remap Ctrl+Z to Ctrl-\ */
+				if (c == '\x1A')
+					c = '\x1C';
 				return c;
 			} else {
 				exit(1);
