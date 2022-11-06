@@ -157,40 +157,41 @@ File FS::open(const char* path, const char* mode, const bool create) {
 
 	validate_filename(filename);
 
-	if (filename.find("/") != std::string::npos) {
-		std::string dir = filename;
-
-		mkdir(::dirname((char*)dir.c_str()));
-	}
-
 	filename = FS_PREFIX + path;
 
 	return File(::fopen(filename.c_str(), mode));
 }
 
 bool FS::exists(const char* path) {
-	std::string filename = FS_PREFIX + path;
+	std::string filename = path;
 	struct stat st;
 
 	validate_filename(filename);
+
+	filename = FS_PREFIX + path;
 
 	return ::stat(filename.c_str(), &st) == 0;
 }
 
 bool FS::remove(const char* path) {
-	std::string filename = FS_PREFIX + path;
+	std::string filename = path;
 
 	validate_filename(filename);
+
+	filename = FS_PREFIX + path;
 
 	return ::unlink(filename.c_str()) == 0;
 }
 
 bool FS::rename(const char* pathFrom, const char* pathTo) {
-	std::string filenameFrom = FS_PREFIX + pathFrom;
-	std::string filenameTo = FS_PREFIX + pathTo;
+	std::string filenameFrom = pathFrom;
+	std::string filenameTo = pathTo;
 
 	validate_filename(filenameFrom);
 	validate_filename(filenameTo);
+
+	filenameFrom = FS_PREFIX + pathFrom;
+	filenameTo = FS_PREFIX + pathTo;
 
 	return ::rename(filenameFrom.c_str(), filenameTo.c_str()) == 0;
 }
@@ -200,25 +201,18 @@ bool FS::mkdir(const char *path) {
 
 	validate_filename(filename);
 
-	if (filename.find("/") != std::string::npos) {
-		std::string copy = filename;
-		char *dir = dirname((char*)copy.c_str());
-
-		if (dir != copy)
-			mkdir(dir);
-	} else {
-		::mkdir(FS_PREFIX.c_str(), 0777);
-	}
-
 	filename = FS_PREFIX + path;
 
+	::mkdir(FS_PREFIX.c_str(), 0777);
 	return ::mkdir(filename.c_str(), 0777) == 0;
 }
 
 bool FS::rmdir(const char *path) {
-	std::string filename = FS_PREFIX + path;
+	std::string filename = path;
 
 	validate_filename(filename);
+
+	filename = FS_PREFIX + path;
 
 	return ::rmdir(filename.c_str()) == 0;
 }
