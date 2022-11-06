@@ -18,11 +18,11 @@
 
 #pragma once
 
-#include <ArduinoJson.hpp>
-
 #include <string>
 
 #include <uuid/log.h>
+
+#include "json.h"
 
 namespace app {
 
@@ -85,9 +85,9 @@ private:
 #endif
 
 	bool read_config(const std::string &filename, bool load = true);
-	void read_config(const ArduinoJson::JsonDocument &doc);
+	void read_config(const app::JsonDocument &doc);
 	bool write_config(const std::string &filename);
-	void write_config(ArduinoJson::JsonDocument &doc);
+	void write_config(app::JsonDocument &doc);
 
 #if __has_include("../config_class.h")
 # include "../config_class.h"

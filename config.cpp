@@ -33,6 +33,7 @@
 
 #include "app.h"
 #include "fs.h"
+#include "json.h"
 
 #ifndef PSTR_ALIGN
 # define PSTR_ALIGN 4
@@ -72,7 +73,7 @@ MCU_APP_INTERNAL_CONFIG_DATA
 #undef MCU_APP_CONFIG_GENERIC
 #undef MCU_APP_CONFIG_ENUM
 
-void Config::read_config(const ArduinoJson::JsonDocument &doc) {
+void Config::read_config(const app::JsonDocument &doc) {
 #define MCU_APP_CONFIG_GENERIC(__type, __key_prefix, __name, __key_suffix, __read_default, ...) \
 		__name(doc[FPSTR(__pstr__##__name)] | __read_default, ##__VA_ARGS__);
 #define MCU_APP_CONFIG_ENUM(__type, __key_prefix, __name, __key_suffix, __read_default, ...) \
@@ -82,7 +83,7 @@ void Config::read_config(const ArduinoJson::JsonDocument &doc) {
 #undef MCU_APP_CONFIG_ENUM
 }
 
-void Config::write_config(ArduinoJson::JsonDocument &doc) {
+void Config::write_config(app::JsonDocument &doc) {
 #define MCU_APP_CONFIG_GENERIC(__type, __key_prefix, __name, __key_suffix, __read_default, ...) \
 		doc[FPSTR(__pstr__##__name)] = __name();
 #define MCU_APP_CONFIG_ENUM(__type, __key_prefix, __name, __key_suffix, __read_default, ...) \
@@ -160,7 +161,7 @@ Config::Config(bool mount) {
 	if (!loaded_) {
 		if (mount) {
 			logger_.err(F("Config failure, using defaults"));
-			read_config(ArduinoJson::StaticJsonDocument<0>());
+			read_config(app::JsonDocument{0});
 			loaded_ = true;
 		} else {
 			logger_.crit(F("Config accessed before load"));
@@ -217,7 +218,7 @@ bool Config::read_config(const std::string &filename, bool load) {
 	logger_.info(F("Reading config file %s"), filename.c_str());
 	auto file = FS.open(filename.c_str(), "r");
 	if (file) {
-		ArduinoJson::DynamicJsonDocument doc(BUFFER_SIZE);
+		app::JsonDocument doc{BUFFER_SIZE};
 
 		auto error = ArduinoJson::deserializeMsgPack(doc, file);
 		if (error) {
@@ -240,7 +241,7 @@ bool Config::write_config(const std::string &filename) {
 	logger_.info(F("Writing config file %s"), filename.c_str());
 	auto file = FS.open(filename.c_str(), "w");
 	if (file) {
-		ArduinoJson::DynamicJsonDocument doc(BUFFER_SIZE);
+		app::JsonDocument doc{BUFFER_SIZE};
 
 		write_config(doc);
 
