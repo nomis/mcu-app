@@ -159,6 +159,7 @@ File FS::open(const char* path, const char* mode, const bool create) {
 
 	filename = FS_PREFIX + path;
 
+	::mkdir(FS_PREFIX.c_str(), 0777);
 	return File(::fopen(filename.c_str(), mode));
 }
 
