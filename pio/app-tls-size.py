@@ -31,7 +31,7 @@ RE_ELF_SYMBOL = re.compile(r"^\s*(?P<num>\w+):\s+(?P<value>\w+)\s+(?P<size>\w+)\
 
 def print_tls_size(fw_elf):
 	header = True
-	lines = subprocess.run(["readelf", "-sdW", fw_elf],
+	lines = subprocess.run(["readelf", "-W", "--syms", "--dyn-syms", fw_elf],
 			check=True, universal_newlines=True, stdout=subprocess.PIPE
 		).stdout.strip().split("\n")
 	syms = set()
