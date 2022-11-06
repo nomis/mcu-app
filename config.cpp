@@ -215,7 +215,7 @@ void Config::umount() {
 
 bool Config::read_config(const std::string &filename, bool load) {
 	logger_.info(F("Reading config file %s"), filename.c_str());
-	File file = FS.open(filename.c_str(), "r");
+	auto file = FS.open(filename.c_str(), "r");
 	if (file) {
 		ArduinoJson::DynamicJsonDocument doc(BUFFER_SIZE);
 
@@ -238,7 +238,7 @@ bool Config::read_config(const std::string &filename, bool load) {
 
 bool Config::write_config(const std::string &filename) {
 	logger_.info(F("Writing config file %s"), filename.c_str());
-	File file = FS.open(filename.c_str(), "w");
+	auto file = FS.open(filename.c_str(), "w");
 	if (file) {
 		ArduinoJson::DynamicJsonDocument doc(BUFFER_SIZE);
 
