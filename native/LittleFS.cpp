@@ -15,31 +15,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#ifdef ENV_NATIVE
 
-#pragma once
-
+#include <Arduino.h>
 #include <FS.h>
 #include <LittleFS.h>
 
-namespace app {
+fs::LittleFSFS LittleFS;
 
-static constexpr auto &FS = LittleFS;
+namespace fs {
 
-inline bool FS_begin(bool formatOnFail) {
-	bool ret;
-#if defined(ARDUINO_ARCH_ESP8266)
-	ret = FS.begin();
-	if (!ret && formatOnFail) {
-		if (FS.format()) {
-			ret = FS.begin();
-		}
-	}
-#elif defined(ARDUINO_ARCH_ESP32) || defined(ENV_NATIVE)
-	ret = FS.begin(formatOnFail);
-#else
-# error "Unknown arch"
+LittleFSFS::LittleFSFS() : FS() {}
+LittleFSFS::~LittleFSFS() {}
+bool LittleFSFS::begin(bool formatOnFail, const char *basePath, uint8_t maxOpenFiles, const char *partitionLabel) { return true; }
+bool LittleFSFS::format() { return true; }
+size_t LittleFSFS::totalBytes() { return SIZE_MAX; }
+size_t LittleFSFS::usedBytes() { return 0; }
+void LittleFSFS::end() {}
+
+} // namespace fs
 #endif
-	return ret;
-}
-
-} // namespace app

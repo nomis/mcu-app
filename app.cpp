@@ -146,12 +146,12 @@ void App::start() {
 	}
 #endif
 
-#ifndef ENV_NATIVE
 	Config config;
 	if (config.wifi_ssid().empty()) {
 		local_console_ = true;
 	}
 
+#ifndef ENV_NATIVE
 	if (CONSOLE_PIN >= 0) {
 		logger_.info(F("Local console %S"), local_console_ ? F("enabled") : F("disabled"));
 	}

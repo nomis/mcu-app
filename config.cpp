@@ -29,9 +29,7 @@
 
 #include <uuid/common.h>
 #include <uuid/log.h>
-#ifndef ENV_NATIVE
-# include <ArduinoJson.hpp>
-#endif
+#include <ArduinoJson.hpp>
 
 #include "app.h"
 #include "fs.h"
@@ -74,7 +72,6 @@ MCU_APP_INTERNAL_CONFIG_DATA
 #undef MCU_APP_CONFIG_GENERIC
 #undef MCU_APP_CONFIG_ENUM
 
-#ifndef ENV_NATIVE
 void Config::read_config(const ArduinoJson::JsonDocument &doc) {
 #define MCU_APP_CONFIG_GENERIC(__type, __key_prefix, __name, __key_suffix, __read_default, ...) \
 		__name(doc[FPSTR(__pstr__##__name)] | __read_default, ##__VA_ARGS__);
@@ -95,7 +92,6 @@ void Config::write_config(ArduinoJson::JsonDocument &doc) {
 #undef MCU_APP_CONFIG_PRIMITIVE
 #undef MCU_APP_CONFIG_ENUM
 }
-#endif
 
 #undef MCU_APP_CONFIG_SIMPLE
 #undef MCU_APP_CONFIG_PRIMITIVE
@@ -143,7 +139,6 @@ bool Config::unavailable_ = false;
 bool Config::loaded_ = false;
 
 Config::Config(bool mount) {
-#ifndef ENV_NATIVE
 	if (!unavailable_ && !mounted_ && mount) {
 		logger_.info(F("Mounting filesystem"));
 		if (FS_begin(true)) {
@@ -171,7 +166,6 @@ Config::Config(bool mount) {
 			logger_.crit(F("Config accessed before load"));
 		}
 	}
-#endif
 }
 
 void Config::syslog_host(const std::string &syslog_host) {
@@ -187,7 +181,6 @@ void Config::syslog_host(const std::string &syslog_host) {
 }
 
 void Config::commit() {
-#ifndef ENV_NATIVE
 	if (!unavailable_ && !mounted_) {
 		logger_.info(F("Mounting filesystem"));
 		if (FS_begin(true)) {
@@ -209,24 +202,18 @@ void Config::commit() {
 			}
 		}
 	}
-#endif
 }
 
 void Config::umount() {
-#ifndef ENV_NATIVE
 	if (mounted_) {
 		logger_.info(F("Unmounting filesystem"));
 		FS.end();
 		logger_.info(F("Unmounted filesystem"));
 		mounted_ = false;
 	}
-#endif
 }
 
 bool Config::read_config(const std::string &filename, bool load) {
-#ifdef ENV_NATIVE
-	return true;
-#else
 	logger_.info(F("Reading config file %s"), filename.c_str());
 	File file = FS.open(filename.c_str(), "r");
 	if (file) {
@@ -247,13 +234,9 @@ bool Config::read_config(const std::string &filename, bool load) {
 		logger_.err(F("Config file %s does not exist"), filename.c_str());
 		return false;
 	}
-#endif
 }
 
 bool Config::write_config(const std::string &filename) {
-#ifdef ENV_NATIVE
-	return true;
-#else
 	logger_.info(F("Writing config file %s"), filename.c_str());
 	File file = FS.open(filename.c_str(), "w");
 	if (file) {
@@ -273,7 +256,6 @@ bool Config::write_config(const std::string &filename) {
 		logger_.alert(F("Unable to open config file %s for writing"), filename.c_str());
 		return false;
 	}
-#endif
 }
 
 } // namespace app

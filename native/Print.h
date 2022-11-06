@@ -36,6 +36,9 @@ class Print {
 public:
 	virtual size_t write(uint8_t c) = 0;
 	virtual size_t write(const uint8_t *buffer, size_t size) = 0;
+	void setWriteError(int err = 1) {}
+	int getWriteError() { return 0; }
+	void clearWriteError() {}
 	size_t print(char c) { return write((uint8_t)c); }
 	size_t print(const char *data) { return write(reinterpret_cast<const uint8_t *>(data), strlen(data)); }
 	size_t print(const __FlashStringHelper *data) { return print(reinterpret_cast<const char *>(data)); }

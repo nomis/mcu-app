@@ -52,6 +52,8 @@ int vsnprintf_P(char *str, size_t size, const char *format, va_list ap);
 
 #define pgm_read_byte(addr) (*reinterpret_cast<const char *>(addr))
 
+typedef bool boolean;
+
 class NativeConsole: public Stream {
 public:
 	void begin(unsigned long baud __attribute__((unused))) {

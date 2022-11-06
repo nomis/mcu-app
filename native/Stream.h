@@ -98,8 +98,21 @@ public:
 
     float parseFloat();               // float version of parseInt
 
-#if 0
-    virtual size_t readBytes(char *buffer, size_t length); // read chars from stream into buffer
+    virtual size_t readBytes(char *buffer, size_t length) // read chars from stream into buffer
+    {
+        size_t total = 0;
+
+        while (length-- > 0) {
+            int c = read();
+            if (c == -1)
+                return total;
+
+            *buffer = c;
+            total++;
+        }
+
+        return total;
+    }
     virtual size_t readBytes(uint8_t *buffer, size_t length)
     {
         return readBytes((char *) buffer, length);
@@ -107,7 +120,21 @@ public:
     // terminates if length characters have been read or timeout (see setTimeout)
     // returns the number of characters placed in the buffer (0 means no valid data found)
 
-    size_t readBytesUntil(char terminator, char *buffer, size_t length); // as readBytes with terminator character
+    size_t readBytesUntil(char terminator, char *buffer, size_t length) // as readBytes with terminator character
+    {
+        size_t total = 0;
+
+        while (length-- > 0) {
+            int c = read();
+            if (c == -1 || c == terminator)
+                return total;
+
+            *buffer = c;
+            total++;
+        }
+
+        return total;
+    }
     size_t readBytesUntil(char terminator, uint8_t *buffer, size_t length)
     {
         return readBytesUntil(terminator, (char *) buffer, length);
@@ -115,9 +142,37 @@ public:
     // terminates if length characters have been read, timeout, or if the terminator character  detected
     // returns the number of characters placed in the buffer (0 means no valid data found)
 
+#if 0
     // Arduino String functions to be added here
-    virtual String readString();
-    String readStringUntil(char terminator);
+    virtual String readString() {
+        String str;
+
+        while (1) {
+            int c = read();
+            if (c == -1) {
+                break;
+            }
+
+            str.concat(c);
+        }
+
+        return str;
+    }
+
+    String readStringUntil(char terminator) {
+        String str;
+
+        while (1) {
+            int c = read();
+            if (c == -1 || c == terminator) {
+                break;
+            }
+
+            str.concat(c);
+        }
+
+        return str;
+    }
 #endif
 
 protected:
