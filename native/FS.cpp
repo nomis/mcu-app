@@ -20,6 +20,7 @@
 #include <Arduino.h>
 #include <FS.h>
 #include <assert.h>
+#include <errno.h>
 #include <libgen.h>
 #include <stdio.h>
 #include <string>
@@ -205,7 +206,8 @@ bool FS::mkdir(const char *path) {
 	filename = FS_PREFIX + path;
 
 	::mkdir(FS_PREFIX.c_str(), 0777);
-	return ::mkdir(filename.c_str(), 0777) == 0;
+	int ret = ::mkdir(filename.c_str(), 0777);
+	return ret == 0 || errno == EEXIST;
 }
 
 bool FS::rmdir(const char *path) {
