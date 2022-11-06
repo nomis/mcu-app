@@ -626,7 +626,6 @@ static void setup_builtin_commands(std::shared_ptr<Commands> &commands) {
 		}
 	});
 
-#ifndef ENV_NATIVE
 	commands->add_command(ShellContext::MAIN, CommandFlags::ADMIN, flash_string_vector{F_(sync)},
 			[] (Shell &shell, const std::vector<std::string> &arguments __attribute__((unused))) {
 		auto msg = F("Unable to mount filesystem");
@@ -640,6 +639,7 @@ static void setup_builtin_commands(std::shared_ptr<Commands> &commands) {
 		}
 	});
 
+#ifndef ENV_NATIVE
 	commands->add_command(ShellContext::MAIN, CommandFlags::ADMIN, flash_string_vector{F_(syslog), F_(host)}, flash_string_vector{F_(ip_address_optional)},
 			[] (Shell &shell, const std::vector<std::string> &arguments) {
 		Config config;
@@ -684,6 +684,7 @@ static void setup_builtin_commands(std::shared_ptr<Commands> &commands) {
 
 		to_app(shell).config_syslog();
 	});
+#endif
 
 	commands->add_command(ShellContext::MAIN, CommandFlags::ADMIN, flash_string_vector{F_(umount)},
 			[] (Shell &shell __attribute__((unused)), const std::vector<std::string> &arguments __attribute__((unused))) {
@@ -691,6 +692,7 @@ static void setup_builtin_commands(std::shared_ptr<Commands> &commands) {
 		config.umount();
 	});
 
+#ifndef ENV_NATIVE
 	commands->add_command(ShellContext::MAIN, CommandFlags::ADMIN | CommandFlags::LOCAL, flash_string_vector{F_(wifi), F_(connect)},
 			[] (Shell &shell __attribute__((unused)), const std::vector<std::string> &arguments __attribute__((unused))) {
 		to_app(shell).network_.connect();
