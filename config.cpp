@@ -216,7 +216,8 @@ void Config::umount() {
 
 bool Config::read_config(const std::string &filename, bool load) {
 	logger_.info(F("Reading config file %s"), filename.c_str());
-	auto file = FS.open(filename.c_str(), "r");
+	const char mode[2] = {'r', '\0'};
+	auto file = FS.open(filename.c_str(), mode);
 	if (file) {
 		app::JsonDocument doc{BUFFER_SIZE};
 
@@ -239,7 +240,8 @@ bool Config::read_config(const std::string &filename, bool load) {
 
 bool Config::write_config(const std::string &filename) {
 	logger_.info(F("Writing config file %s"), filename.c_str());
-	auto file = FS.open(filename.c_str(), "w");
+	const char mode[2] = {'w', '\0'};
+	auto file = FS.open(filename.c_str(), mode);
 	if (file) {
 		app::JsonDocument doc{BUFFER_SIZE};
 
