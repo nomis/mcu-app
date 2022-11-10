@@ -43,6 +43,7 @@
 #define strncpy_P strncpy
 #define strcmp_P strcmp
 
+#define MALLOC_CAP_DEFAULT 0
 #define MALLOC_CAP_SPIRAM 0
 #define MALLOC_CAP_8BIT 0
 static inline void *heap_caps_malloc(size_t size, uint32_t caps) { return malloc(size); }
