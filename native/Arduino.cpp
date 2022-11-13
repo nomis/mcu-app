@@ -30,10 +30,24 @@
 #include <string>
 #include <vector>
 
-NativeConsole Serial;
+__attribute__((weak)) NativeConsole Serial;
 
-static unsigned long start_millis;
-static unsigned long start_micros;
+class StartTimes {
+public:
+	StartTimes() {
+		struct timespec ts;
+
+		clock_gettime(CLOCK_MONOTONIC, &ts);
+		millis = ts.tv_sec * 1000 + ts.tv_nsec / 1000000;
+		micros = ts.tv_sec * 1000000 + ts.tv_nsec / 1000;
+	}
+
+	unsigned long millis;
+	unsigned long micros;
+};
+static StartTimes start;
+
+#ifndef PIO_UNIT_TESTING
 static struct termios tm_orig;
 
 static void fix_termios(void) {
@@ -45,12 +59,7 @@ static void signal_handler(int num) {
 }
 
 int main(int argc __attribute__((unused)), char *argv[] __attribute__((unused))) {
-	struct timespec ts;
 	struct termios tm_new;
-
-	clock_gettime(CLOCK_MONOTONIC, &ts);
-	start_millis = ts.tv_sec * 1000 + ts.tv_nsec / 1000000;
-	start_micros = ts.tv_sec * 1000000 + ts.tv_nsec / 1000;
 
 	tcgetattr(STDIN_FILENO, &tm_orig);
 	tm_new = tm_orig;
@@ -69,16 +78,17 @@ int main(int argc __attribute__((unused)), char *argv[] __attribute__((unused)))
 	}
 	return 0;
 }
+#endif
 
-unsigned long millis() {
+__attribute__((weak)) unsigned long millis() {
 	struct timespec ts;
 
 	clock_gettime(CLOCK_MONOTONIC, &ts);
 
-	return (unsigned long)(ts.tv_sec * 1000 + ts.tv_nsec / 1000000) - start_millis;
+	return (unsigned long)(ts.tv_sec * 1000 + ts.tv_nsec / 1000000) - start.millis;
 }
 
-void delay(unsigned long millis) {
+__attribute__((weak)) void delay(unsigned long millis) {
 	struct timespec ts = {
 		.tv_sec = (long)millis / 1000,
 		.tv_nsec = ((long)millis % 1000) * 1000000,
@@ -87,15 +97,15 @@ void delay(unsigned long millis) {
 	nanosleep(&ts, NULL);
 }
 
-unsigned long micros() {
+__attribute__((weak)) unsigned long micros() {
 	struct timespec ts;
 
 	clock_gettime(CLOCK_MONOTONIC, &ts);
 
-	return (unsigned long)(ts.tv_sec * 1000000 + ts.tv_nsec / 1000) - start_micros;
+	return (unsigned long)(ts.tv_sec * 1000000 + ts.tv_nsec / 1000) - start.micros;
 }
 
-void delayMicroseconds(unsigned long micros) {
+__attribute__((weak)) void delayMicroseconds(unsigned long micros) {
 	struct timespec ts = {
 		.tv_sec = (long)micros / 1000000,
 		.tv_nsec = ((long)micros % 1000000) * 1000,
