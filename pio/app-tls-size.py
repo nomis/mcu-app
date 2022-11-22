@@ -72,4 +72,4 @@ if __name__ == "__main__":
 elif __name__ == "SCons.Script":
 	Import("env")
 
-	env.AddPostAction("$BUILD_DIR/${PROGNAME}.elf", after_fw_elf)
+	env.AddPostAction("${BUILD_DIR}/${PROGNAME}.elf", after_fw_elf)
