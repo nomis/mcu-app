@@ -58,7 +58,7 @@ typedef bool boolean;
 
 class NativeConsole: public Stream {
 public:
-	void begin(unsigned long baud __attribute__((unused))) {
+	void begin(unsigned long baud) {
 
 	}
 

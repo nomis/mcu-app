@@ -28,6 +28,10 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
+#include <algorithm>
+
+#include "../util.h"
+
 static const std::string FS_PREFIX = ".pio/fs/";
 
 namespace fs {
@@ -41,10 +45,16 @@ size_t File::write(uint8_t c) {
 }
 
 size_t File::write(const uint8_t *buf, size_t size) {
-	return ::fwrite(buf, size, 1, f_);
+	if (f_ == nullptr)
+		return 0;
+
+	return ::fwrite(buf, 1, size, f_);
 }
 
 int File::available() {
+	if (f_ == nullptr)
+		return 0;
+
 	long current = ::ftell(f_);
 
 	::fseek(f_, 0, SEEK_END);
@@ -57,6 +67,9 @@ int File::available() {
 }
 
 int File::read() {
+	if (f_ == nullptr)
+		return -1;
+
 	if (peek_ != -1) {
 		uint8_t c = peek_;
 		peek_ = -1;
@@ -72,6 +85,9 @@ int File::read() {
 }
 
 int File::peek() {
+	if (f_ == nullptr)
+		return -1;
+
 	if (peek_ != -1) {
 		uint8_t c = peek_;
 		peek_ = -1;
@@ -85,6 +101,9 @@ int File::peek() {
 void File::flush() {}
 
 size_t File::read(uint8_t* buf, size_t size) {
+	if (f_ == nullptr)
+		return 0;
+
 	if (size == 0)
 		return 0;
 
@@ -95,10 +114,13 @@ size_t File::read(uint8_t* buf, size_t size) {
 		size--;
 	}
 
-	return ::fread(buf, size, 1, f_);
+	return ::fread(buf, 1, size, f_);
 }
 
 bool File::seek(uint32_t pos, SeekMode mode) {
+	if (f_ == nullptr)
+		return false;
+
 	switch (mode) {
 	case SeekSet:
 		return ::fseek(f_, pos, SEEK_SET) == 0;
@@ -115,10 +137,16 @@ bool File::seek(uint32_t pos, SeekMode mode) {
 }
 
 size_t File::position() const {
+	if (f_ == nullptr)
+		return 0;
+
 	return ::ftell(f_);
 }
 
 size_t File::size() const {
+	if (f_ == nullptr)
+		return 0;
+
 	long current = ::ftell(f_);
 
 	::fseek(f_, 0, SEEK_END);
@@ -136,74 +164,136 @@ void File::close() {
 	if (f_)
 		::fclose(f_);
 	f_ = nullptr;
+
+	if (d_)
+		::closedir(d_);
+	d_ = nullptr;
 }
 
-File::operator bool() const { return f_ != nullptr; }
-time_t File::getLastWrite() { return 0; }
-//const char* File::path() const {}
+File::operator bool() const {
+	return f_ != nullptr || d_ != nullptr;
+}
+
+time_t File::getLastWrite() {
+	struct stat st;
+
+	if (f_ != nullptr && ::fstat(fileno(f_), &st) == 0)
+		return st.st_mtime;
+
+	if (d_ != nullptr && ::fstat(dirfd(d_), &st) == 0)
+		return st.st_mtime;
+
+	return 0;
+}
+const char* File::path() const { return path_.c_str(); }
 //const char* File::name() const {}
 
-//boolean File::isDirectory(void) {}
-//File File::openNextFile(const char* mode = FILE_READ) {}
-//void File::rewindDirectory(void) {}
+boolean File::isDirectory(void) { return d_ != nullptr; }
 
-static void validate_filename(const std::string &filename) {
-	assert(filename.find("/..") == std::string::npos);
-	assert(filename.find("../") == std::string::npos);
-	assert(filename != "..");
+File File::openNextFile(const char *mode) {
+	static const std::string this_dir{"."};
+	static const std::string parent_dir{".."};
+	struct dirent *dirp;
+
+	do {
+		dirp = ::readdir(d_);
+		if (dirp != nullptr) {
+			if (dirp->d_type != DT_REG && dirp->d_type != DT_DIR)
+				continue;
+
+			if (dirp->d_name == this_dir || dirp->d_name == parent_dir)
+				continue;
+
+			break;
+		}
+	} while (dirp != nullptr);
+
+	if (dirp == nullptr)
+		return File(fs_, (FILE*)nullptr, "");
+
+	std::string slash = "/";
+
+	if (!path_.empty() && path_.back() == '/')
+		slash = "";
+
+	return fs_.open((path_ + slash + dirp->d_name).c_str(), mode);
+}
+
+void File::rewindDirectory(void) {
+	::rewinddir(d_);
+}
+
+static std::string resolve_filename(const std::string &filename) {
+	return FS_PREFIX + app::normalise_filename(filename);
+}
+
+static bool valid_filename(const std::string &filename) {
+	std::string normalised_filename = app::normalise_filename(filename);
+	return !normalised_filename.empty() && normalised_filename.front() == '/';
 }
 
 File FS::open(const char* path, const char* mode, const bool create) {
-	std::string filename = path;
+	std::string filename = resolve_filename(path);
+	struct stat st;
 
-	validate_filename(filename);
-
-	filename = FS_PREFIX + path;
+	if (!valid_filename(path))
+		return File(*this, (FILE*)nullptr, "");
 
 	::mkdir(FS_PREFIX.c_str(), 0777);
-	return File(::fopen(filename.c_str(), mode));
+
+	if (create) {
+		// mkdir();
+	}
+
+	if (::stat(filename.c_str(), &st) != 0 && mode == std::string{"r"})
+		return File(*this, (FILE*)nullptr, "");
+
+	if (S_ISDIR(st.st_mode)) {
+		return File(*this, ::opendir(filename.c_str()), path);
+	} else if (S_ISREG(st.st_mode) || mode != std::string{"r"}) {
+		return File(*this, ::fopen(filename.c_str(), mode), path);
+	} else {
+		return File(*this, (FILE*)nullptr, "");
+	}
 }
 
 bool FS::exists(const char* path) {
-	std::string filename = path;
+	std::string filename = resolve_filename(path);
 	struct stat st;
 
-	validate_filename(filename);
-
-	filename = FS_PREFIX + path;
+	if (!valid_filename(path))
+		return false;
 
 	return ::stat(filename.c_str(), &st) == 0;
 }
 
 bool FS::remove(const char* path) {
-	std::string filename = path;
+	std::string filename = resolve_filename(path);
 
-	validate_filename(filename);
-
-	filename = FS_PREFIX + path;
+	if (!valid_filename(path))
+		return false;
 
 	return ::unlink(filename.c_str()) == 0;
 }
 
 bool FS::rename(const char* pathFrom, const char* pathTo) {
-	std::string filenameFrom = pathFrom;
-	std::string filenameTo = pathTo;
+	std::string filenameFrom = resolve_filename(pathFrom);
+	std::string filenameTo = resolve_filename(pathTo);
 
-	validate_filename(filenameFrom);
-	validate_filename(filenameTo);
+	if (!valid_filename(pathFrom))
+		return false;
 
-	filenameFrom = FS_PREFIX + pathFrom;
-	filenameTo = FS_PREFIX + pathTo;
+	if (!valid_filename(pathTo))
+		return false;
 
 	return ::rename(filenameFrom.c_str(), filenameTo.c_str()) == 0;
 }
 
 bool FS::mkdir(const char *path) {
-	std::string filename = path;
+	std::string filename = resolve_filename(path);
 
-	validate_filename(filename);
-
-	filename = FS_PREFIX + path;
+	if (!valid_filename(path))
+		return false;
 
 	::mkdir(FS_PREFIX.c_str(), 0777);
 	int ret = ::mkdir(filename.c_str(), 0777);
@@ -211,11 +301,10 @@ bool FS::mkdir(const char *path) {
 }
 
 bool FS::rmdir(const char *path) {
-	std::string filename = path;
+	std::string filename = resolve_filename(path);
 
-	validate_filename(filename);
-
-	filename = FS_PREFIX + path;
+	if (!valid_filename(path))
+		return false;
 
 	return ::rmdir(filename.c_str()) == 0;
 }

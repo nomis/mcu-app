@@ -31,6 +31,7 @@
 # include <sys/time.h>
 #endif
 
+#include <algorithm>
 #include <array>
 #include <cmath>
 #include <cstdio>
@@ -74,6 +75,7 @@ MAKE_PSTR_WORD(bad)
 #endif
 MAKE_PSTR_WORD(connect)
 MAKE_PSTR_WORD(console)
+MAKE_PSTR_WORD(cp)
 #if defined(ARDUINO_ARCH_ESP8266)
 MAKE_PSTR_WORD(disabled)
 #endif
@@ -82,6 +84,7 @@ MAKE_PSTR_WORD(disconnect)
 MAKE_PSTR_WORD(enabled)
 #endif
 MAKE_PSTR_WORD(exit)
+MAKE_PSTR_WORD(fs)
 #if !defined(ARDUINO_ARCH_ESP8266)
 MAKE_PSTR_WORD(good)
 #endif
@@ -91,9 +94,12 @@ MAKE_PSTR_WORD(hostname)
 MAKE_PSTR_WORD(level)
 MAKE_PSTR_WORD(log)
 MAKE_PSTR_WORD(logout)
+MAKE_PSTR_WORD(ls)
 MAKE_PSTR_WORD(mark)
 MAKE_PSTR_WORD(memory)
+MAKE_PSTR_WORD(mkdir)
 MAKE_PSTR_WORD(mkfs)
+MAKE_PSTR_WORD(mv)
 MAKE_PSTR_WORD(network)
 #if defined(ARDUINO_ARCH_ESP8266)
 MAKE_PSTR_WORD(off)
@@ -102,8 +108,11 @@ MAKE_PSTR_WORD(on)
 MAKE_PSTR_WORD(ota)
 MAKE_PSTR_WORD(passwd)
 MAKE_PSTR_WORD(password)
+MAKE_PSTR_WORD(read)
 MAKE_PSTR_WORD(reconnect)
 MAKE_PSTR_WORD(restart)
+MAKE_PSTR_WORD(rm)
+MAKE_PSTR_WORD(rmdir)
 MAKE_PSTR_WORD(scan)
 MAKE_PSTR_WORD(set)
 MAKE_PSTR_WORD(show)
@@ -120,7 +129,10 @@ MAKE_PSTR_WORD(update)
 MAKE_PSTR_WORD(uptime)
 MAKE_PSTR_WORD(version)
 MAKE_PSTR_WORD(wifi)
+MAKE_PSTR_WORD(write)
 MAKE_PSTR(asterisks, "********")
+MAKE_PSTR(filename_mandatory, "<filename>")
+MAKE_PSTR(filename_optional, "[filename]")
 MAKE_PSTR(host_is_fmt, "Host = %s")
 MAKE_PSTR(invalid_log_level, "Invalid log level")
 MAKE_PSTR(ip_address_optional, "[IP address]")
@@ -154,6 +166,181 @@ static inline App &to_app(Shell &shell) {
 
 #define NO_ARGUMENTS std::vector<std::string>{}
 
+static char encode_base64(uint8_t value) {
+	if (value < 26) {
+		return 'A' + value;
+	} else if (value < 52) {
+		return 'a' + (value - 26);
+	} else if (value < 62) {
+		return '0' + (value - 52);
+	} else if (value == 62) {
+		return '+';
+	} else {
+		return '/';
+	}
+}
+
+static int8_t decode_base64(char value) {
+	if (value >= 'A' && value <= 'Z') {
+		return value - 'A';
+	} else if (value >= 'a' && value <= 'z') {
+		return 26 + (value - 'a');
+	} else if (value >= '0' && value <= '9') {
+		return 52 + (value - '0');
+	} else if (value == '+') {
+		return 62;
+	} else if (value == '/') {
+		return 63;
+	} else if (value == '=') {
+		return 64;
+	} else {
+		return -1;
+	}
+}
+
+static void list_file(Shell &shell, fs::File &file) {
+	std::string path = file.path();
+	struct tm tm;
+	time_t mtime = file.getLastWrite();
+
+	if (file.isDirectory() && (path.empty() || path.back() != '/'))
+		path.push_back('/');
+
+	tm.tm_year = 0;
+	gmtime_r(&mtime, &tm);
+
+	if (tm.tm_year != 0) {
+		shell.printfln(F("%c %7zu %04u-%02u-%02u %02u:%02u:%02u %s"),
+			file.isDirectory() ? 'd' : '-', file.size(),
+			tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday,
+			tm.tm_hour, tm.tm_min, tm.tm_sec,
+			path.c_str());
+	} else {
+		shell.printfln(F("%c %7zu [%10ld] %s"),
+			file.isDirectory() ? 'd' : '-', file.size(),
+			mtime, (unsigned long)file.getLastWrite(), path.c_str());
+	}
+}
+
+static bool fs_allowed(const std::string &filename) {
+	std::string path = normalise_filename(filename);
+
+	return path.find(uuid::read_flash_string(F("/config.")), 0) != 0;
+}
+
+static bool fs_valid_file(Shell &shell, const std::string &filename, bool allow_dir = false) {
+	auto file = FS.open(filename.c_str());
+
+	if (!file) {
+		shell.printfln(F("%s: file not found"), filename.c_str());
+		return false;
+	}
+
+	if (file.isDirectory() && !allow_dir) {
+		shell.printfln(F("%s: is a directory"), filename.c_str());
+		return false;
+	}
+
+	if (!fs_allowed(filename)) {
+		shell.printfln(F("%s: access denied"), filename.c_str());
+		return false;
+	}
+
+	return true;
+}
+
+static bool fs_valid_dir(Shell &shell, const std::string &dirname, bool must_exist = true) {
+	auto dir = FS.open(dirname.c_str());
+
+	if (dir) {
+		if (!dir.isDirectory()) {
+			shell.printfln(F("%s: is not a directory"), dirname.c_str());
+			return false;
+		}
+	} else if (must_exist) {
+		shell.printfln(F("%s: directory not found"), dirname.c_str());
+		return false;
+	}
+
+	if (!fs_allowed(dirname)) {
+		shell.printfln(F("%s: access denied"), dirname.c_str());
+		return false;
+	}
+
+	return true;
+}
+
+static bool fs_valid_mv_cp(Shell &shell, const std::string &from_filename, std::string &to_filename, bool allow_dir = false) {
+	if (!fs_valid_file(shell, from_filename, allow_dir))
+		return false;
+
+	if (!fs_allowed(to_filename)) {
+		shell.printfln(F("%s: access denied"), to_filename.c_str());
+		return false;
+	}
+
+	if (!to_filename.empty()) {
+		auto file = FS.open(to_filename.c_str());
+		if (file.isDirectory()) {
+			if (to_filename.back() != '/')
+				to_filename.push_back('/');
+
+			to_filename.append(base_filename(from_filename));
+
+			if (!fs_allowed(to_filename)) {
+				shell.printfln(F("%s: access denied"), to_filename.c_str());
+				return false;
+			}
+
+			auto file2 = FS.open(to_filename.c_str());
+			if (file2.isDirectory()) {
+				shell.printfln(F("%s: is a directory"), to_filename.c_str());
+				return false;
+			}
+		}
+	}
+
+	return true;
+}
+
+static std::vector<std::string> fs_autocomplete(Shell &shell,
+		const std::vector<std::string> &current_arguments,
+		const std::string &next_argument) {
+	std::string path = next_argument.empty() ? std::string{{'/'}} : next_argument;
+	std::vector<std::string> files;
+
+retry:
+	auto dir = FS.open(path.c_str());
+	if (dir) {
+		if (dir.isDirectory()) {
+			path = dir.path();
+			if (path.empty() || path.back() != '/')
+				path.push_back('/');
+			files.emplace_back(path);
+
+			while (1) {
+				auto file = dir.openNextFile();
+				if (file) {
+					files.emplace_back(file.path());
+				} else {
+					break;
+				}
+			}
+		} else {
+			files.emplace_back(dir.path());
+		}
+	} else if (path.length() > 1 && path.back() != '/') {
+		while (path.length() > 1 && path.back() != '/') {
+			path.pop_back();
+			if (path.back() == '/')
+				goto retry;
+		}
+	}
+
+	std::sort(files.begin(), files.end());
+	return files;
+}
+
 static void setup_builtin_commands(std::shared_ptr<Commands> &commands) {
 	commands->add_command(ShellContext::MAIN, CommandFlags::USER, flash_string_vector{F_(console), F_(log)}, flash_string_vector{F_(log_level_optional)},
 			[] (Shell &shell, const std::vector<std::string> &arguments) {
@@ -169,14 +356,20 @@ static void setup_builtin_commands(std::shared_ptr<Commands> &commands) {
 		}
 		shell.printfln(F_(log_level_is_fmt), uuid::log::format_level_uppercase(shell.log_level()));
 	},
-	[] (Shell &shell __attribute__((unused)), const std::vector<std::string> &arguments __attribute__((unused))) -> std::vector<std::string> {
+	[] (Shell &shell, const std::vector<std::string> &current_arguments,
+			const std::string &next_argument) -> std::vector<std::string> {
 		return uuid::log::levels_lowercase();
 	});
 
 	commands->add_command(ShellContext::MAIN, CommandFlags::USER, flash_string_vector{F_(exit)}, AppShell::main_exit_function);
 
+	commands->add_command(ShellContext::MAIN, CommandFlags::ADMIN, flash_string_vector{F_(fs)},
+			[] (Shell &shell, const std::vector<std::string> &arguments) {
+		shell.enter_context(ShellContext::FILESYSTEM);
+	});
+
 	commands->add_command(ShellContext::MAIN, CommandFlags::USER, flash_string_vector{F_(help)},
-			[] (Shell &shell, const std::vector<std::string> &arguments __attribute__((unused))) {
+			[] (Shell &shell, const std::vector<std::string> &arguments) {
 		shell.print_all_available_commands();
 	});
 
@@ -184,7 +377,7 @@ static void setup_builtin_commands(std::shared_ptr<Commands> &commands) {
 
 #ifndef ENV_NATIVE
 	commands->add_command(ShellContext::MAIN, CommandFlags::ADMIN | CommandFlags::LOCAL, flash_string_vector{F_(mkfs)},
-			[] (Shell &shell, const std::vector<std::string> &arguments __attribute__((unused))) {
+			[] (Shell &shell, const std::vector<std::string> &arguments) {
 		shell.logger().warning("Formatting filesystem");
 		if (FS.format()) {
 			auto msg = F("Formatted filesystem");
@@ -200,7 +393,7 @@ static void setup_builtin_commands(std::shared_ptr<Commands> &commands) {
 
 #if !defined(ENV_NATIVE) && !defined(ARDUINO_ARCH_ESP8266)
 	commands->add_command(ShellContext::MAIN, CommandFlags::ADMIN, flash_string_vector{F_(ota), F_(bad)},
-			[] (Shell &shell, const std::vector<std::string> &arguments __attribute__((unused))) {
+			[] (Shell &shell, const std::vector<std::string> &arguments) {
 		esp_err_t err = esp_ota_mark_app_invalid_rollback_and_reboot();
 		if (err) {
 			shell.printfln(F("Rollback failed: %d"), err);
@@ -208,7 +401,7 @@ static void setup_builtin_commands(std::shared_ptr<Commands> &commands) {
 	});
 
 	commands->add_command(ShellContext::MAIN, CommandFlags::ADMIN, flash_string_vector{F_(ota), F_(good)},
-			[] (Shell &shell, const std::vector<std::string> &arguments __attribute__((unused))) {
+			[] (Shell &shell, const std::vector<std::string> &arguments) {
 		esp_err_t err = esp_ota_mark_app_valid_cancel_rollback();
 		if (err) {
 			shell.printfln(F("Commit failed: %d"), err);
@@ -217,7 +410,7 @@ static void setup_builtin_commands(std::shared_ptr<Commands> &commands) {
 
 # ifdef OTA_URL
 	commands->add_command(ShellContext::MAIN, CommandFlags::ADMIN, flash_string_vector{F_(ota), F_(update)},
-			[] (Shell &shell, const std::vector<std::string> &arguments __attribute__((unused))) {
+			[] (Shell &shell, const std::vector<std::string> &arguments) {
 		static const char *root_ca =
 			"-----BEGIN CERTIFICATE-----\n"
 			"MIIFazCCA1OgAwIBAgIRAIIQz7DSQONZRGPgu2OCiwAwDQYJKoZIhvcNAQELBQAw"
@@ -310,7 +503,7 @@ static void setup_builtin_commands(std::shared_ptr<Commands> &commands) {
 #endif
 
 	commands->add_command(ShellContext::MAIN, CommandFlags::ADMIN, flash_string_vector{F_(passwd)},
-			[] (Shell &shell, const std::vector<std::string> &arguments __attribute__((unused))) {
+			[] (Shell &shell, const std::vector<std::string> &arguments) {
 		shell.enter_password(F_(new_password_prompt1),
 				[] (Shell &shell, bool completed, const std::string &password1) {
 			if (completed) {
@@ -333,13 +526,13 @@ static void setup_builtin_commands(std::shared_ptr<Commands> &commands) {
 
 #ifndef ENV_NATIVE
 	commands->add_command(ShellContext::MAIN, CommandFlags::ADMIN, flash_string_vector{F_(restart)},
-		[] (Shell &shell __attribute__((unused)), const std::vector<std::string> &arguments __attribute__((unused))) {
+		[] (Shell &shell, const std::vector<std::string> &arguments) {
 			ESP.restart();
 	});
 #endif
 
 	commands->add_command(ShellContext::MAIN, CommandFlags::USER, flash_string_vector{F_(set)},
-			[] (Shell &shell, const std::vector<std::string> &arguments __attribute__((unused))) {
+			[] (Shell &shell, const std::vector<std::string> &arguments) {
 		Config config;
 		if (shell.has_flags(CommandFlags::ADMIN | CommandFlags::LOCAL)) {
 			shell.printfln(F_(wifi_ssid_fmt), config.wifi_ssid().empty() ? uuid::read_flash_string(F_(unset)).c_str() : config.wifi_ssid().c_str());
@@ -356,7 +549,7 @@ static void setup_builtin_commands(std::shared_ptr<Commands> &commands) {
 	});
 
 	commands->add_command(ShellContext::MAIN, CommandFlags::ADMIN, flash_string_vector{F_(set), F_(hostname)}, flash_string_vector{F_(name_optional)},
-			[] (Shell &shell __attribute__((unused)), const std::vector<std::string> &arguments) {
+			[] (Shell &shell, const std::vector<std::string> &arguments) {
 		Config config;
 
 		if (arguments.empty()) {
@@ -372,7 +565,7 @@ static void setup_builtin_commands(std::shared_ptr<Commands> &commands) {
 
 #if defined(ARDUINO_ARCH_ESP8266)
 	commands->add_command(ShellContext::MAIN, CommandFlags::ADMIN, flash_string_vector{F_(set), F_(ota), F_(off)},
-			[] (Shell &shell, const std::vector<std::string> &arguments __attribute__((unused))) {
+			[] (Shell &shell, const std::vector<std::string> &arguments) {
 		Config config;
 		config.ota_enabled(false);
 		config.commit();
@@ -381,7 +574,7 @@ static void setup_builtin_commands(std::shared_ptr<Commands> &commands) {
 	});
 
 	commands->add_command(ShellContext::MAIN, CommandFlags::ADMIN | CommandFlags::LOCAL, flash_string_vector{F_(set), F_(ota), F_(on)},
-			[] (Shell &shell, const std::vector<std::string> &arguments __attribute__((unused))) {
+			[] (Shell &shell, const std::vector<std::string> &arguments) {
 		Config config;
 		config.ota_enabled(true);
 		config.commit();
@@ -390,7 +583,7 @@ static void setup_builtin_commands(std::shared_ptr<Commands> &commands) {
 	});
 
 	commands->add_command(ShellContext::MAIN, CommandFlags::ADMIN | CommandFlags::LOCAL, flash_string_vector{F_(set), F_(ota), F_(password)},
-			[] (Shell &shell, const std::vector<std::string> &arguments __attribute__((unused))) {
+			[] (Shell &shell, const std::vector<std::string> &arguments) {
 		shell.enter_password(F_(new_password_prompt1), [] (Shell &shell, bool completed, const std::string &password1) {
 				if (completed) {
 					shell.enter_password(F_(new_password_prompt2), [password1] (Shell &shell, bool completed, const std::string &password2) {
@@ -418,13 +611,14 @@ static void setup_builtin_commands(std::shared_ptr<Commands> &commands) {
 		config.commit();
 		shell.printfln(F_(wifi_ssid_fmt), config.wifi_ssid().empty() ? uuid::read_flash_string(F_(unset)).c_str() : config.wifi_ssid().c_str());
 	},
-	[] (Shell &shell __attribute__((unused)), const std::vector<std::string> &arguments __attribute__((unused))) -> std::vector<std::string> {
+	[] (Shell &shell, const std::vector<std::string> &current_arguments,
+			const std::string &next_argument) -> std::vector<std::string> {
 		Config config;
-		return std::vector<std::string>{config.wifi_ssid()};
+		return {config.wifi_ssid()};
 	});
 
 	commands->add_command(ShellContext::MAIN, CommandFlags::ADMIN | CommandFlags::LOCAL, flash_string_vector{F_(set), F_(wifi), F_(password)},
-			[] (Shell &shell, const std::vector<std::string> &arguments __attribute__((unused))) {
+			[] (Shell &shell, const std::vector<std::string> &arguments) {
 		shell.enter_password(F_(new_password_prompt1), [] (Shell &shell, bool completed, const std::string &password1) {
 				if (completed) {
 					shell.enter_password(F_(new_password_prompt2), [password1] (Shell &shell, bool completed, const std::string &password2) {
@@ -444,7 +638,7 @@ static void setup_builtin_commands(std::shared_ptr<Commands> &commands) {
 	});
 
 	commands->add_command(ShellContext::MAIN, CommandFlags::USER, flash_string_vector{F_(show)},
-			[] (Shell &shell, const std::vector<std::string> &arguments __attribute__((unused))) {
+			[] (Shell &shell, const std::vector<std::string> &arguments) {
 		const std::string show = uuid::read_flash_string(F("show"));
 		bool first = true;
 
@@ -463,7 +657,7 @@ static void setup_builtin_commands(std::shared_ptr<Commands> &commands) {
 
 #ifndef ENV_NATIVE
 	commands->add_command(ShellContext::MAIN, CommandFlags::USER, flash_string_vector{F_(show), F_(memory)},
-			[] (Shell &shell, const std::vector<std::string> &arguments __attribute__((unused))) {
+			[] (Shell &shell, const std::vector<std::string> &arguments) {
 #if defined(ARDUINO_ARCH_ESP8266)
 		shell.printfln(F("Free heap:                %lu bytes"), (unsigned long)ESP.getFreeHeap());
 		shell.printfln(F("Maximum free block size:  %lu bytes"), (unsigned long)ESP.getMaxFreeBlockSize());
@@ -485,13 +679,13 @@ static void setup_builtin_commands(std::shared_ptr<Commands> &commands) {
 	});
 
 	commands->add_command(ShellContext::MAIN, CommandFlags::USER, flash_string_vector{F_(show), F_(network)},
-			[] (Shell &shell, const std::vector<std::string> &arguments __attribute__((unused))) {
+			[] (Shell &shell, const std::vector<std::string> &arguments) {
 		to_app(shell).network_.print_status(shell);
 	});
 
 #if !defined(ARDUINO_ARCH_ESP8266)
 	commands->add_command(ShellContext::MAIN, CommandFlags::USER, flash_string_vector{F_(show), F_(ota)},
-			[] (Shell &shell, const std::vector<std::string> &arguments __attribute__((unused))) {
+			[] (Shell &shell, const std::vector<std::string> &arguments) {
 		const esp_partition_t *current = esp_ota_get_running_partition();
 		const esp_partition_t *next = esp_ota_get_next_update_partition(nullptr);
 		const esp_partition_t *boot = esp_ota_get_boot_partition();
@@ -530,32 +724,38 @@ static void setup_builtin_commands(std::shared_ptr<Commands> &commands) {
 #endif
 
 	commands->add_command(ShellContext::MAIN, CommandFlags::USER, flash_string_vector{F_(show), F_(system)},
-			[] (Shell &shell, const std::vector<std::string> &arguments __attribute__((unused))) {
+			[] (Shell &shell, const std::vector<std::string> &arguments) {
 #if defined(ARDUINO_ARCH_ESP8266)
-		shell.printfln(F("Chip ID:       0x%08x"), ESP.getChipId());
-		shell.printfln(F("SDK version:   %s"), ESP.getSdkVersion());
-		shell.printfln(F("Core version:  %s"), ESP.getCoreVersion().c_str());
-		shell.printfln(F("Full version:  %s"), ESP.getFullVersion().c_str());
-		shell.printfln(F("Boot version:  %u"), ESP.getBootVersion());
-		shell.printfln(F("Boot mode:     %u"), ESP.getBootMode());
-		shell.printfln(F("CPU frequency: %u MHz"), ESP.getCpuFreqMHz());
-		shell.printfln(F("Flash chip:    0x%08X (%u bytes)"), ESP.getFlashChipId(), ESP.getFlashChipRealSize());
+		if (0) {
+			shell.printfln(F("Chip ID:       0x%08x"), ESP.getChipId());
+			shell.printfln(F("SDK version:   %s"), ESP.getSdkVersion());
+			shell.printfln(F("Core version:  %s"), ESP.getCoreVersion().c_str());
+			shell.printfln(F("Full version:  %s"), ESP.getFullVersion().c_str());
+			shell.printfln(F("Boot version:  %u"), ESP.getBootVersion());
+			shell.printfln(F("Boot mode:     %u"), ESP.getBootMode());
+			shell.printfln(F("CPU frequency: %u MHz"), ESP.getCpuFreqMHz());
+			shell.printfln(F("Flash chip:    0x%08X (%u bytes)"), ESP.getFlashChipId(), ESP.getFlashChipRealSize());
+		}
 		shell.printfln(F("Reset reason:  %s"), ESP.getResetReason().c_str());
 		shell.printfln(F("Reset info:    %s"), ESP.getResetInfo().c_str());
 #elif defined(ARDUINO_ARCH_ESP32)
-		shell.printfln(F("Chip model:    %s"), ESP.getChipModel());
-		shell.printfln(F("Chip revision: 0x%02x"), ESP.getChipRevision());
-		shell.printfln(F("Chip cores:    %u"), ESP.getChipCores());
-		shell.printfln(F("SDK version:   %s"), ESP.getSdkVersion());
-		shell.printfln(F("CPU frequency: %u MHz"), ESP.getCpuFreqMHz());
-		shell.printfln(F("Flash chip:    %u Hz (%u bytes)"), ESP.getFlashChipSpeed(), ESP.getFlashChipSize());
-		shell.printfln(F("PSRAM size:    %u bytes"), ESP.getPsramSize());
+		if (0) {
+			shell.printfln(F("Chip model:    %s"), ESP.getChipModel());
+			shell.printfln(F("Chip revision: 0x%02x"), ESP.getChipRevision());
+			shell.printfln(F("Chip cores:    %u"), ESP.getChipCores());
+			shell.printfln(F("SDK version:   %s"), ESP.getSdkVersion());
+			shell.printfln(F("CPU frequency: %u MHz"), ESP.getCpuFreqMHz());
+			shell.printfln(F("Flash chip:    %u Hz (%u bytes)"), ESP.getFlashChipSpeed(), ESP.getFlashChipSize());
+			shell.printfln(F("PSRAM size:    %u bytes"), ESP.getPsramSize());
+		}
 		shell.printfln(F("Reset reason:  %u/%u"), rtc_get_reset_reason(0), rtc_get_reset_reason(1));
 		shell.printfln(F("Wake cause:    %u"), rtc_get_wakeup_cause());
 #else
 # error "Unknown arch"
 #endif
-		shell.printfln(F("Sketch size:   %u bytes (%u bytes free)"), ESP.getSketchSize(), ESP.getFreeSketchSpace());
+		if (0) {
+			shell.printfln(F("Sketch size:   %u bytes (%u bytes free)"), ESP.getSketchSize(), ESP.getFreeSketchSpace());
+		}
 
 #if defined(ARDUINO_ARCH_ESP8266)
 		FSInfo info;
@@ -573,7 +773,7 @@ static void setup_builtin_commands(std::shared_ptr<Commands> &commands) {
 #endif
 
 	commands->add_command(ShellContext::MAIN, CommandFlags::USER, flash_string_vector{F_(show), F_(uptime)},
-			[] (Shell &shell, const std::vector<std::string> &arguments __attribute__((unused))) {
+			[] (Shell &shell, const std::vector<std::string> &arguments) {
 		shell.print(F("Uptime: "));
 		shell.print(uuid::log::format_timestamp_ms(uuid::get_uptime_ms(), 3));
 		shell.println();
@@ -595,12 +795,12 @@ static void setup_builtin_commands(std::shared_ptr<Commands> &commands) {
 	});
 
 	commands->add_command(ShellContext::MAIN, CommandFlags::USER, flash_string_vector{F_(show), F_(version)},
-			[] (Shell &shell, const std::vector<std::string> &arguments __attribute__((unused))) {
+			[] (Shell &shell, const std::vector<std::string> &arguments) {
 		shell.println(F("Version: " APP_VERSION));
 	});
 
 	commands->add_command(ShellContext::MAIN, CommandFlags::USER, flash_string_vector{F_(su)},
-			[=] (Shell &shell, const std::vector<std::string> &arguments __attribute__((unused))) {
+			[=] (Shell &shell, const std::vector<std::string> &arguments) {
 		auto become_admin = [] (Shell &shell) {
 			shell.logger().log(LogLevel::NOTICE, LogFacility::AUTH, F("Admin session opened on console %s"), dynamic_cast<AppShell&>(shell).console_name().c_str());
 			shell.add_flags(CommandFlags::ADMIN);
@@ -627,7 +827,7 @@ static void setup_builtin_commands(std::shared_ptr<Commands> &commands) {
 	});
 
 	commands->add_command(ShellContext::MAIN, CommandFlags::ADMIN, flash_string_vector{F_(sync)},
-			[] (Shell &shell, const std::vector<std::string> &arguments __attribute__((unused))) {
+			[] (Shell &shell, const std::vector<std::string> &arguments) {
 		auto msg = F("Unable to mount filesystem");
 		if (FS.begin()) {
 			FS.end();
@@ -669,7 +869,8 @@ static void setup_builtin_commands(std::shared_ptr<Commands> &commands) {
 		}
 		shell.printfln(F_(log_level_is_fmt), uuid::log::format_level_uppercase(config.syslog_level()));
 	},
-	[] (Shell &shell __attribute__((unused)), const std::vector<std::string> &arguments __attribute__((unused))) -> std::vector<std::string> {
+	[] (Shell &shell, const std::vector<std::string> &current_arguments,
+			const std::string &next_argument) -> std::vector<std::string> {
 		return uuid::log::levels_lowercase();
 	});
 
@@ -687,40 +888,349 @@ static void setup_builtin_commands(std::shared_ptr<Commands> &commands) {
 #endif
 
 	commands->add_command(ShellContext::MAIN, CommandFlags::ADMIN, flash_string_vector{F_(umount)},
-			[] (Shell &shell __attribute__((unused)), const std::vector<std::string> &arguments __attribute__((unused))) {
+			[] (Shell &shell, const std::vector<std::string> &arguments) {
 		Config config;
 		config.umount();
 	});
 
 #ifndef ENV_NATIVE
 	commands->add_command(ShellContext::MAIN, CommandFlags::ADMIN | CommandFlags::LOCAL, flash_string_vector{F_(wifi), F_(connect)},
-			[] (Shell &shell __attribute__((unused)), const std::vector<std::string> &arguments __attribute__((unused))) {
+			[] (Shell &shell, const std::vector<std::string> &arguments) {
 		to_app(shell).network_.connect();
 	});
 
 	commands->add_command(ShellContext::MAIN, CommandFlags::ADMIN | CommandFlags::LOCAL, flash_string_vector{F_(wifi), F_(disconnect)},
-			[] (Shell &shell __attribute__((unused)), const std::vector<std::string> &arguments __attribute__((unused))) {
+			[] (Shell &shell, const std::vector<std::string> &arguments) {
 		to_app(shell).network_.disconnect();
 	});
 
 	commands->add_command(ShellContext::MAIN, CommandFlags::ADMIN, flash_string_vector{F_(wifi), F_(reconnect)},
-			[] (Shell &shell __attribute__((unused)), const std::vector<std::string> &arguments __attribute__((unused))) {
+			[] (Shell &shell, const std::vector<std::string> &arguments) {
 		to_app(shell).network_.reconnect();
 	});
 
 	commands->add_command(ShellContext::MAIN, CommandFlags::ADMIN, flash_string_vector{F_(wifi), F_(scan)},
-			[] (Shell &shell, const std::vector<std::string> &arguments __attribute__((unused))) {
+			[] (Shell &shell, const std::vector<std::string> &arguments) {
 		to_app(shell).network_.scan(shell);
 	});
 
 	commands->add_command(ShellContext::MAIN, CommandFlags::ADMIN, flash_string_vector{F_(wifi), F_(status)},
-			[] (Shell &shell, const std::vector<std::string> &arguments __attribute__((unused))) {
+			[] (Shell &shell, const std::vector<std::string> &arguments) {
 		to_app(shell).network_.print_status(shell);
 	});
 #endif
+
+	commands->add_command(ShellContext::FILESYSTEM, CommandFlags::ADMIN, flash_string_vector{F_(exit)},
+			[] (Shell &shell, const std::vector<std::string> &arguments) {
+		shell.exit_context();
+	});
+
+	commands->add_command(ShellContext::FILESYSTEM, CommandFlags::ADMIN, flash_string_vector{F_(help)},
+			[] (Shell &shell, const std::vector<std::string> &arguments) {
+		shell.print_all_available_commands();
+	});
+
+	commands->add_command(ShellContext::FILESYSTEM, CommandFlags::ADMIN, flash_string_vector{F_(logout)},
+			[=] (Shell &shell, const std::vector<std::string> &arguments) {
+		shell.exit_context();
+		AppShell::main_logout_function(shell, NO_ARGUMENTS);
+	});
+
+	commands->add_command(ShellContext::FILESYSTEM, CommandFlags::ADMIN, flash_string_vector{F_(ls)}, flash_string_vector{F_(filename_optional)},
+			[] (Shell &shell, const std::vector<std::string> &arguments) {
+		auto dirname = arguments.empty() ? uuid::read_flash_string(F("/")) : arguments[0];
+		auto dir = FS.open(dirname.c_str());
+		if (dir) {
+			for (auto &filename : fs_autocomplete(shell, {}, dirname)) {
+				auto file = FS.open(filename.c_str());
+				list_file(shell, file);
+			}
+		} else {
+			shell.printfln(F("%s: file not found"), dirname.c_str());
+		}
+	}, fs_autocomplete);
+
+	commands->add_command(ShellContext::FILESYSTEM, CommandFlags::ADMIN, flash_string_vector{F_(mv)},
+				flash_string_vector{F_(filename_mandatory), F_(filename_mandatory)},
+			[] (Shell &shell, const std::vector<std::string> &arguments) {
+		auto &from_filename = arguments[0];
+		auto to_filename = arguments[1];
+
+		if (!fs_valid_mv_cp(shell, from_filename, to_filename, true))
+			return;
+
+		if (!FS.rename(from_filename.c_str(), to_filename.c_str())) {
+			if (!FS.open(from_filename.c_str())) {
+				shell.printfln(F("%s: error"), from_filename.c_str());
+			} else {
+				shell.printfln(F("%s: error"), to_filename.c_str());
+			}
+		}
+	}, fs_autocomplete);
+
+	commands->add_command(ShellContext::FILESYSTEM, CommandFlags::ADMIN, flash_string_vector{F_(cp)},
+				flash_string_vector{F_(filename_mandatory), F_(filename_mandatory)},
+			[] (Shell &shell, const std::vector<std::string> &arguments) {
+		auto &from_filename = arguments[0];
+		auto to_filename = arguments[1];
+
+		if (!fs_valid_mv_cp(shell, from_filename, to_filename))
+			return;
+
+		auto from_file = FS.open(from_filename.c_str());
+		const char mode[2] = { 'w', '\0' };
+		auto to_file = FS.open(to_filename.c_str(), mode);
+
+		if (!to_file) {
+			shell.printfln(F("%s: open error"), to_filename.c_str());
+			return;
+		}
+
+		uint8_t buf[64];
+		size_t len;
+
+		do {
+			len = from_file.read(buf, sizeof(buf));
+			if (len > 0) {
+				if (to_file.write(buf, len) != len) {
+					shell.printfln(F("%s: write error"), to_filename.c_str());
+					return;
+				}
+			}
+		} while (len > 0);
+	}, fs_autocomplete);
+
+	commands->add_command(ShellContext::FILESYSTEM, CommandFlags::ADMIN, flash_string_vector{F_(rm)}, flash_string_vector{F_(filename_mandatory)},
+			[] (Shell &shell, const std::vector<std::string> &arguments) {
+		auto &filename = arguments[0];
+
+		if (!fs_valid_file(shell, filename))
+			return;
+
+		if (!FS.remove(filename.c_str())) {
+			shell.printfln(F("%s: error"), filename.c_str());
+			return;
+		}
+	}, fs_autocomplete);
+
+	commands->add_command(ShellContext::FILESYSTEM, CommandFlags::ADMIN, flash_string_vector{F_(mkdir)}, flash_string_vector{F_(filename_mandatory)},
+			[] (Shell &shell, const std::vector<std::string> &arguments) {
+		auto &dirname = arguments[0];
+
+		if (!fs_valid_dir(shell, dirname, false))
+			return;
+
+		if (!FS.mkdir(dirname.c_str())) {
+			shell.printfln(F("%s: error"), dirname.c_str());
+			return;
+		}
+	}, fs_autocomplete);
+
+	commands->add_command(ShellContext::FILESYSTEM, CommandFlags::ADMIN, flash_string_vector{F_(rmdir)}, flash_string_vector{F_(filename_mandatory)},
+			[] (Shell &shell, const std::vector<std::string> &arguments) {
+		auto &dirname = arguments[0];
+
+		if (!fs_valid_dir(shell, dirname))
+			return;
+
+		if (!FS.rmdir(dirname.c_str())) {
+			shell.printfln(F("%s: error"), dirname.c_str());
+			return;
+		}
+	}, fs_autocomplete);
+
+	commands->add_command(ShellContext::FILESYSTEM, CommandFlags::ADMIN, flash_string_vector{F_(read)}, flash_string_vector{F_(filename_mandatory)},
+			[] (Shell &shell, const std::vector<std::string> &arguments) {
+		auto &filename = arguments[0];
+
+		uint8_t buf[58];
+		auto file = FS.open(filename.c_str());
+
+		if (file) {
+			if (file.isDirectory()) {
+				shell.printfln(F("%s: is a directory"), filename.c_str());
+				return;
+			}
+
+			if (!fs_allowed(filename)) {
+				shell.printfln(F("%s: access denied"), filename.c_str());
+				return;
+			}
+
+			bool newline = true;
+			size_t total = 0;
+			size_t len;
+
+			do {
+				len = file.read(buf, sizeof(buf) - 1);
+
+				if (len > 0) {
+					size_t pos = 0;
+					size_t available = len;
+					bool end = false;
+
+					buf[len] = 0;
+
+					while (available > 0) {
+						newline = false;
+						shell.print(encode_base64(buf[pos] >> 2));
+						shell.print(encode_base64(((buf[pos] & 0x3) << 4) | (buf[pos + 1] >> 4)));
+						if (available >= 2) {
+							shell.print(encode_base64(((buf[pos + 1] & 0xF) << 2) | (buf[pos + 2] >> 6)));
+						} else {
+							shell.print('=');
+							end = true;
+						}
+						if (available >= 3) {
+							shell.print(encode_base64( buf[pos + 2] & 0x3F));
+						} else {
+							shell.print('=');
+							end = true;
+						}
+						pos += 3;
+						available -= 3;
+					}
+
+					if (end || len == sizeof(buf) - 1) {
+						shell.println();
+						newline = true;
+					}
+
+					total += len;
+				}
+			} while (len == sizeof(buf) - 1);
+
+			if (!newline)
+				shell.println();
+
+			shell.printfln(F("%s: read %zu"), filename.c_str(), total);
+		} else {
+			shell.printfln(F("%s: file not found"), filename.c_str());
+		}
+	}, fs_autocomplete);
+
+	commands->add_command(ShellContext::FILESYSTEM, CommandFlags::ADMIN, flash_string_vector{F_(write)}, flash_string_vector{F_(filename_mandatory)},
+			[] (Shell &shell, const std::vector<std::string> &arguments) {
+		auto filename = arguments[0];
+
+		{
+			auto file = FS.open(filename.c_str());
+
+			if (file && file.isDirectory()) {
+				shell.printfln(F("%s: is a directory"), filename.c_str());
+				return;
+			}
+		}
+
+		if (!fs_allowed(filename)) {
+			shell.printfln(F("%s: access denied"), filename.c_str());
+			return;
+		}
+
+		std::vector<uint8_t> data;
+		std::array<uint8_t,4> buf{};
+		size_t len = 0;
+		size_t padding = 0;
+		bool newline = true;
+
+		shell.block_with([filename, data, buf, len, padding, newline] (Shell &shell, bool stop) mutable -> bool {
+			if (stop)
+				return stop;
+
+			int c = shell.read();
+
+			if (c == -1)
+				return stop;
+
+			int8_t val = decode_base64(c);
+
+			if (val >= 0 && val < 64) {
+				shell.write(c);
+				newline = false;
+			} else if (c == '\r') {
+				shell.println();
+				newline = true;
+			} else if (c == '\x03' || c == '\x1C') {
+				shell.println();
+				shell.println(F("Interrupted"));
+				return true;
+			}
+
+			if (val == 64) {
+				padding++;
+
+				if (padding > 2) {
+					if (!newline)
+						shell.println();
+
+					shell.println(F("Data error: too much padding"));
+					return true;
+				}
+			} else if (val >= 0) {
+				if (padding > 0) {
+					if (!newline)
+						shell.println();
+
+					shell.println(F("Data error: content after padding"));
+					return true;
+				}
+
+				buf[len] = val;
+				len++;
+			}
+
+			if (len + padding >= 4) {
+				if (len == 1) {
+					if (!newline)
+						shell.println();
+
+					shell.println(F("Data error: incomplete byte"));
+					return true;
+				}
+
+				if (len >= 2)
+					data.push_back((char)(buf[0] << 2) | (buf[1] >> 4));
+
+				if (len >= 3)
+					data.push_back((char)(buf[1] << 4) | (buf[2] >> 2));
+
+				if (len >= 4)
+					data.push_back((char)(buf[2] << 6) | buf[3]);
+
+				len = 0;
+			}
+
+			if (c == '\x04') {
+				if (!newline)
+					shell.println();
+
+				if (len + padding > 0) {
+					shell.println(F("Data error: incomplete sequence"));
+				} else {
+					const char mode[2] = { 'w', '\0' };
+					auto file = FS.open(filename.c_str(), mode);
+
+					if (file) {
+						if (file.write(data.data(), data.size()) != data.size()) {
+							shell.printfln(F("%s: write error"), filename.c_str());
+						} else {
+							shell.printfln(F("%s: write %zu"), filename.c_str(), data.size());
+						}
+						file.close();
+					} else {
+						shell.printfln(F("%s: unable to open for writing"), filename.c_str());
+					}
+				}
+
+				return true;
+			}
+
+			return stop;
+		});
+	}, fs_autocomplete);
 }
 
-__attribute__((weak)) void setup_commands(std::shared_ptr<Commands> &commands __attribute__((unused))) {}
+__attribute__((weak)) void setup_commands(std::shared_ptr<Commands> &commands) {}
 
 std::shared_ptr<Commands> AppShell::commands_ = [] {
 	std::shared_ptr<Commands> commands = std::make_shared<Commands>();
@@ -775,6 +1285,19 @@ std::string AppShell::hostname_text() {
 	return hostname;
 }
 
+std::string AppShell::context_text() {
+	switch (static_cast<ShellContext>(context())) {
+	case ShellContext::MAIN:
+		return std::string{'/'};
+
+	case ShellContext::FILESYSTEM:
+		return uuid::read_flash_string(F("/fs"));
+
+	default:
+		return std::string{};
+	}
+}
+
 std::string AppShell::prompt_suffix() {
 	if (has_flags(CommandFlags::ADMIN)) {
 		return std::string{'#'};
@@ -791,7 +1314,7 @@ void AppShell::end_of_transmission() {
 	}
 }
 
-void AppShell::main_exit_function(Shell &shell, const std::vector<std::string> &arguments __attribute__((unused))) {
+void AppShell::main_exit_function(Shell &shell, const std::vector<std::string> &arguments) {
 	if (shell.has_flags(CommandFlags::ADMIN)) {
 		AppShell::main_exit_admin_function(shell, NO_ARGUMENTS);
 	} else {
@@ -799,18 +1322,18 @@ void AppShell::main_exit_function(Shell &shell, const std::vector<std::string> &
 	}
 }
 
-void AppShell::main_logout_function(Shell &shell, const std::vector<std::string> &arguments __attribute__((unused))) {
+void AppShell::main_logout_function(Shell &shell, const std::vector<std::string> &arguments) {
 	if (shell.has_flags(CommandFlags::ADMIN)) {
 		AppShell::main_exit_admin_function(shell, NO_ARGUMENTS);
 	}
 	AppShell::main_exit_user_function(shell, NO_ARGUMENTS);
 };
 
-void AppShell::main_exit_user_function(Shell &shell, const std::vector<std::string> &arguments __attribute__((unused))) {
+void AppShell::main_exit_user_function(Shell &shell, const std::vector<std::string> &arguments) {
 	shell.stop();
 };
 
-void AppShell::main_exit_admin_function(Shell &shell, const std::vector<std::string> &arguments __attribute__((unused))) {
+void AppShell::main_exit_admin_function(Shell &shell, const std::vector<std::string> &arguments) {
 	shell.logger().log(LogLevel::INFO, LogFacility::AUTH, "Admin session closed on console %s", dynamic_cast<AppShell&>(shell).console_name().c_str());
 	shell.remove_flags(CommandFlags::ADMIN);
 };

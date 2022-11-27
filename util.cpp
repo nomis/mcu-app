@@ -53,6 +53,61 @@ std::string hex_string(const uint8_t *buf, size_t len) {
 	return text.data();
 }
 
+std::string normalise_filename(const std::string &filename) {
+	std::string output;
+
+	output.reserve(filename.length());
+
+	for (size_t i = 0; i < filename.length(); i++) {
+		if (output.empty() || output.back() == '/') {
+			if (filename[i] == '/' && !output.empty()) {
+				continue;
+			} else if (filename[i] == '.') {
+				if (filename.length() - i < 2 || filename[i + 1] == '/') {
+					i++;
+					continue;
+				} else if (filename[i + 1] == '.' && (filename.length() - i < 3 || filename[i + 2] == '/')) {
+					i += 2;
+
+					size_t pos = output.rfind('/', output.length() - 2);
+					if (pos != std::string::npos) {
+						output.resize(pos + 1);
+					} else {
+						output.resize(0);
+					}
+					continue;
+				}
+			}
+		}
+
+		size_t pos = filename.find('/', i);
+		if (pos != std::string::npos) {
+			pos++;
+		} else {
+			pos = filename.length();
+		}
+
+		output.insert(output.end(), &filename[i], &filename[pos]);
+		i = pos - 1;
+	}
+
+	return output;
+}
+
+std::string base_filename(const std::string &filename) {
+	std::string path = normalise_filename(filename);
+
+	if (!path.empty() && path.back() == '/')
+		path.pop_back();
+
+	size_t pos = filename.rfind('/');
+	if (pos != std::string::npos) {
+		return filename.substr(pos + 1);
+	} else {
+		return filename;
+	}
+}
+
 #ifdef ARDUINO_ARCH_ESP32
 std::string reset_reason_string(RESET_REASON reason) {
 	const __FlashStringHelper *text = F("unknown");

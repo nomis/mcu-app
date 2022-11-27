@@ -42,6 +42,9 @@ private:
 
 std::string hex_string(const uint8_t *buf, size_t len);
 
+std::string normalise_filename(const std::string &filename);
+std::string base_filename(const std::string &filename);
+
 #ifdef ARDUINO_ARCH_ESP32
 std::string reset_reason_string(RESET_REASON reason);
 std::string wakeup_cause_string(WAKEUP_REASON cause);

@@ -22,8 +22,11 @@
 #define FS_H
 
 #include <memory>
+#include <string>
 #include <Arduino.h>
 #include <stdio.h>
+#include <sys/types.h>
+#include <dirent.h>
 
 namespace fs
 {
@@ -35,76 +38,86 @@ namespace fs
 class File;
 
 enum SeekMode {
-    SeekSet = 0,
-    SeekCur = 1,
-    SeekEnd = 2
+	SeekSet = 0,
+	SeekCur = 1,
+	SeekEnd = 2
 };
+
+class FS;
 
 class File : public Stream
 {
 public:
-    explicit File(FILE *f) : f_(f) {
-        _timeout = 0;
-    }
-    ~File();
+	explicit File(FS &fs, FILE *f, std::string filename) : fs_(fs), f_(f) {
+		_timeout = 0;
+		path_ = filename;
+	}
+	explicit File(FS &fs, DIR *d, std::string filename) : fs_(fs), d_(d) {
+		_timeout = 0;
+		path_ = filename;
+	}
+	~File();
 
-    size_t write(uint8_t) override;
-    size_t write(const uint8_t *buf, size_t size) override;
-    int available() override;
-    int read() override;
-    int peek() override;
-    void flush() override;
-    size_t read(uint8_t* buf, size_t size);
-    size_t readBytes(char *buffer, size_t length)
-    {
-        return read((uint8_t*)buffer, length);
-    }
+	size_t write(uint8_t) override;
+	size_t write(const uint8_t *buf, size_t size) override;
+	int available() override;
+	int read() override;
+	int peek() override;
+	void flush() override;
+	size_t read(uint8_t* buf, size_t size);
+	size_t readBytes(char *buffer, size_t length)
+	{
+		return read((uint8_t*)buffer, length);
+	}
 
-    bool seek(uint32_t pos, SeekMode mode);
-    bool seek(uint32_t pos)
-    {
-        return seek(pos, SeekSet);
-    }
-    size_t position() const;
-    size_t size() const;
-    bool setBufferSize(size_t size);
-    void close();
-    operator bool() const;
-    time_t getLastWrite();
-    const char* path() const;
-    const char* name() const;
+	bool seek(uint32_t pos, SeekMode mode);
+	bool seek(uint32_t pos)
+	{
+		return seek(pos, SeekSet);
+	}
+	size_t position() const;
+	size_t size() const;
+	bool setBufferSize(size_t size);
+	void close();
+	operator bool() const;
+	time_t getLastWrite();
+	const char* path() const;
+	const char* name() const;
 
-    boolean isDirectory(void);
-    File openNextFile(const char* mode = FILE_READ);
-    void rewindDirectory(void);
+	boolean isDirectory(void);
+	File openNextFile(const char* mode = FILE_READ);
+	void rewindDirectory(void);
 
 private:
-    FILE *f_{nullptr};
-    int peek_{-1};
+	FS &fs_;
+	FILE *f_{nullptr};
+	int peek_{-1};
+	std::string path_;
+	DIR *d_{nullptr};
 };
 
 class FS
 {
 public:
-    FS() { }
+	FS() { }
 
-    File open(const char* path, const char* mode = FILE_READ, const bool create = false);
-    File open(const String& path, const char* mode = FILE_READ, const bool create = false);
+	File open(const char* path, const char* mode = FILE_READ, const bool create = false);
+	File open(const String& path, const char* mode = FILE_READ, const bool create = false);
 
-    bool exists(const char* path);
-    bool exists(const String& path);
+	bool exists(const char* path);
+	bool exists(const String& path);
 
-    bool remove(const char* path);
-    bool remove(const String& path);
+	bool remove(const char* path);
+	bool remove(const String& path);
 
-    bool rename(const char* pathFrom, const char* pathTo);
-    bool rename(const String& pathFrom, const String& pathTo);
+	bool rename(const char* pathFrom, const char* pathTo);
+	bool rename(const String& pathFrom, const String& pathTo);
 
-    bool mkdir(const char *path);
-    bool mkdir(const String &path);
+	bool mkdir(const char *path);
+	bool mkdir(const String &path);
 
-    bool rmdir(const char *path);
-    bool rmdir(const String &path);
+	bool rmdir(const char *path);
+	bool rmdir(const String &path);
 };
 
 } // namespace fs

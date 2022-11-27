@@ -40,6 +40,7 @@ enum CommandFlags : unsigned int {
 
 enum ShellContext : unsigned int {
 	MAIN = 0,
+	FILESYSTEM,
 #if __has_include("../console_shellcontext_enum.h")
 # include "../console_shellcontext_enum.h"
 #endif
@@ -66,6 +67,7 @@ protected:
 	void started() override;
 	void display_banner() override;
 	std::string hostname_text() override;
+	std::string context_text() override;
 	std::string prompt_suffix() override;
 	void end_of_transmission() override;
 	void stopped() override;

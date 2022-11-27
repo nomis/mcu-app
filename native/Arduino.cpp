@@ -58,7 +58,7 @@ static void signal_handler(int num) {
 	raise(SIGQUIT);
 }
 
-int main(int argc __attribute__((unused)), char *argv[] __attribute__((unused))) {
+int main(int argc, char *argv[]) {
 	struct termios tm_new;
 
 	tcgetattr(STDIN_FILENO, &tm_orig);
