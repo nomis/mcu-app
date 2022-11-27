@@ -986,7 +986,7 @@ static void setup_builtin_commands(std::shared_ptr<Commands> &commands) {
 			return;
 		}
 
-		uint8_t buf[64];
+		uint8_t buf[1024];
 		size_t len;
 
 		do {
