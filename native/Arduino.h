@@ -46,8 +46,8 @@
 #define MALLOC_CAP_DEFAULT 0
 #define MALLOC_CAP_SPIRAM 0
 #define MALLOC_CAP_8BIT 0
-static inline void *heap_caps_malloc(size_t size, uint32_t caps) { return malloc(size); }
-static inline void *heap_caps_realloc(void *ptr, size_t size, uint32_t caps) { return realloc(ptr, size); }
+static inline void *heap_caps_malloc(size_t size, uint32_t caps __attribute__((unused))) { return malloc(size); }
+static inline void *heap_caps_realloc(void *ptr, size_t size, uint32_t caps __attribute__((unused))) { return realloc(ptr, size); }
 
 int snprintf_P(char *str, size_t size, const char *format, ...);
 int vsnprintf_P(char *str, size_t size, const char *format, va_list ap);
@@ -58,7 +58,7 @@ typedef bool boolean;
 
 class NativeConsole: public Stream {
 public:
-	void begin(unsigned long baud) {
+	void begin(unsigned long baud __attribute__((unused))) {
 
 	}
 

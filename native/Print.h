@@ -35,9 +35,9 @@ int vsnprintf_P(char *str, size_t size, const char *format, va_list ap);
 class Print {
 public:
 	virtual size_t write(uint8_t c) = 0;
-	virtual size_t write(const uint8_t *buffer, size_t size) = 0;
-	void setWriteError(int err = 1) {}
-	int getWriteError() { return 0; }
+	virtual size_t write(const uint8_t *buffer, size_t size) { for (size_t i = 0; i < size; i++) { write(*buffer); buffer++; }; return size; };
+	void setWriteError(int err = 1) { err_ = err; }
+	int getWriteError() { return err_; }
 	void clearWriteError() {}
 	size_t print(char c) { return write((uint8_t)c); }
 	size_t print(const char *data) { return write(reinterpret_cast<const uint8_t *>(data), strlen(data)); }
@@ -69,6 +69,9 @@ public:
 	size_t println(long value) { return print(std::to_string(value).c_str()) + println(); }
 	size_t println(unsigned long value) { return print(std::to_string(value).c_str()) + println(); }
 	virtual void flush() { };
+
+private:
+	int err_{0};
 };
 
 #endif

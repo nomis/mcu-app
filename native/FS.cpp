@@ -32,7 +32,7 @@
 
 #include "../util.h"
 
-static const std::string FS_PREFIX = ".pio/fs/";
+static const std::string FS_PREFIX = ".fs/";
 
 namespace fs {
 
