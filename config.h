@@ -20,9 +20,11 @@
 
 #include <string>
 
-#include <uuid/log.h>
+#include <CBOR.h>
+#include <CBOR_parsing.h>
+#include <CBOR_streams.h>
 
-#include "json.h"
+#include <uuid/log.h>
 
 namespace app {
 
@@ -64,8 +66,6 @@ public:
 	void umount();
 
 private:
-	static constexpr size_t BUFFER_SIZE = 4096;
-
 	static uuid::log::Logger logger_;
 
 	static bool mounted_;
@@ -85,9 +85,10 @@ private:
 #endif
 
 	bool read_config(const std::string &filename, bool load = true);
-	void read_config(const app::JsonDocument &doc);
+	bool read_config(qindesign::cbor::Reader &reader);
+	void read_config_defaults();
 	bool write_config(const std::string &filename);
-	void write_config(app::JsonDocument &doc);
+	void write_config(qindesign::cbor::Writer &writer);
 
 #if __has_include("../config_class.h")
 # include "../config_class.h"
