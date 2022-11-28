@@ -1079,13 +1079,13 @@ static void setup_builtin_commands(std::shared_ptr<Commands> &commands) {
 							shell.print(encode_base64(((buf[pos + 1] & 0xF) << 2) | (buf[pos + 2] >> 6)));
 						} else {
 							shell.print('=');
-							end = true;
 						}
 						if (available >= 3) {
 							shell.print(encode_base64( buf[pos + 2] & 0x3F));
 						} else {
 							shell.print('=');
 							end = true;
+							break;
 						}
 						pos += 3;
 						available -= 3;
@@ -1144,7 +1144,7 @@ static void setup_builtin_commands(std::shared_ptr<Commands> &commands) {
 
 			int8_t val = decode_base64(c);
 
-			if (val >= 0 && val < 64) {
+			if (val >= 0) {
 				shell.write(c);
 				newline = false;
 			} else if (c == '\r') {
@@ -1198,6 +1198,7 @@ static void setup_builtin_commands(std::shared_ptr<Commands> &commands) {
 					data.push_back((char)(buf[2] << 6) | buf[3]);
 
 				len = 0;
+				padding = 0;
 			}
 
 			if (c == '\x04') {
