@@ -343,7 +343,7 @@ bool Config::read_config(const std::string &filename, bool load) {
 
 		if (!cbor::expectValue(reader, cbor::DataType::kTag, cbor::kSelfDescribeTag)
 				|| !reader.isWellFormed()) {
-			logger_.err(F("Failed to parse config file %s: %s"), filename.c_str());
+			logger_.err(F("Failed to parse config file %s"), filename.c_str());
 			return false;
 		} else {
 			if (load) {
