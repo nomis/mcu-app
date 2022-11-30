@@ -97,6 +97,7 @@ void App::init() {
 	syslog_.start();
 	syslog_.maximum_log_messages(100);
 #endif
+	logger_.info(F("System startup (" APP_NAME " " APP_VERSION ")"));
 }
 
 void App::start() {
@@ -113,7 +114,6 @@ void App::start() {
 	}
 #endif
 
-	logger_.info(F("System startup (" APP_NAME " " APP_VERSION ")"));
 #if defined(ARDUINO_ARCH_ESP8266)
 	logger_.info(F("Reset: %s"), ESP.getResetInfo().c_str());
 #elif defined(ARDUINO_ARCH_ESP32)
