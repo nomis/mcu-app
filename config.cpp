@@ -36,6 +36,7 @@
 
 #include "app.h"
 #include "fs.h"
+#include "util.h"
 
 #ifndef PSTR_ALIGN
 # define PSTR_ALIGN 4
@@ -91,20 +92,8 @@ void Config::read_config_defaults() {
 #undef MCU_APP_CONFIG_GENERIC
 }
 
-static bool read_map_value(cbor::Reader &reader, std::string &value) {
-	uint64_t length;
-	bool indefinite;
-
-	if (!cbor::expectText(reader, &length, &indefinite) || indefinite)
-		return false;
-
-	std::vector<char> data(length + 1);
-
-	if (cbor::readFully(reader, reinterpret_cast<uint8_t*>(data.data()), length) != length)
-		return false;
-
-	value = {data.data()};
-	return true;
+static inline bool read_map_value(cbor::Reader &reader, std::string &value) {
+	return read_text(reader, value);
 }
 
 static bool read_map_value(cbor::Reader &reader, long &value) {
@@ -127,8 +116,8 @@ static bool read_map_value(cbor::Reader &reader, unsigned long &value) {
 	return true;
 }
 
-static bool read_map_key(cbor::Reader &reader, std::string &value) {
-	return read_map_value(reader, value);
+static inline bool read_map_key(cbor::Reader &reader, std::string &value) {
+	return read_text(reader, value);
 }
 
 bool Config::read_config(cbor::Reader &reader) {

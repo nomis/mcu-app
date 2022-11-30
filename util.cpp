@@ -28,7 +28,13 @@
 #include <string>
 #include <vector>
 
+#include <CBOR.h>
+#include <CBOR_parsing.h>
+#include <CBOR_streams.h>
+
 #include <uuid/common.h>
+
+namespace cbor = qindesign::cbor;
 
 namespace app {
 
@@ -106,6 +112,39 @@ std::string base_filename(const std::string &filename) {
 	} else {
 		return filename;
 	}
+}
+
+static void write_text(cbor::Writer &writer, const char *text, size_t length) {
+	writer.beginText(length);
+	writer.writeBytes(reinterpret_cast<const uint8_t*>(text), length);
+}
+
+void write_text(cbor::Writer &writer, const std::string &text) {
+	write_text(writer, text.c_str()), text.length();
+}
+
+void write_text(cbor::Writer &writer, const char *text) {
+	write_text(writer, text, strlen(text));
+}
+
+void write_text(cbor::Writer &writer, const __FlashStringHelper *text) {
+	write_text(writer, uuid::read_flash_string(text));
+}
+
+bool read_text(cbor::Reader &reader, std::string &text) {
+	uint64_t length;
+	bool indefinite;
+
+	if (!cbor::expectText(reader, &length, &indefinite) || indefinite)
+		return false;
+
+	std::vector<char> data(length + 1);
+
+	if (cbor::readFully(reader, reinterpret_cast<uint8_t*>(data.data()), length) != length)
+		return false;
+
+	text = {data.data()};
+	return true;
 }
 
 #ifdef ARDUINO_ARCH_ESP32

@@ -27,6 +27,10 @@
 
 #include <string>
 
+#include <CBOR.h>
+#include <CBOR_parsing.h>
+#include <CBOR_streams.h>
+
 namespace app {
 
 class HexPrintable: public Printable {
@@ -44,6 +48,11 @@ std::string hex_string(const uint8_t *buf, size_t len);
 
 std::string normalise_filename(const std::string &filename);
 std::string base_filename(const std::string &filename);
+
+void write_text(qindesign::cbor::Writer &writer, const std::string &text);
+void write_text(qindesign::cbor::Writer &writer, const char *text);
+void write_text(qindesign::cbor::Writer &writer, const __FlashStringHelper *text);
+bool read_text(qindesign::cbor::Reader &reader, std::string &text);
 
 #ifdef ARDUINO_ARCH_ESP32
 std::string reset_reason_string(RESET_REASON reason);
