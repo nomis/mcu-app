@@ -26,6 +26,7 @@
 #ifdef ARDUINO_ARCH_ESP32
 # include <esp_ota_ops.h>
 # include <rom/rtc.h>
+# include <rom/spi_flash.h>
 #endif
 
 #ifdef ENV_NATIVE
@@ -143,6 +144,23 @@ void App::start() {
 	if (desc != nullptr) {
 		logger_.info(F("App build: %s %s"), desc->date, desc->time);
 		logger_.info(F("App hash: %s"), hex_string(desc->app_elf_sha256, sizeof(desc->app_elf_sha256)).c_str());
+	}
+#endif
+
+#ifndef ENV_NATIVE
+# if defined(ARDUINO_ARCH_ESP8266)
+	uint32_t flash_chip_id = ESP.getFlashChipId();
+# elif defined(ARDUINO_ARCH_ESP32)
+	uint32_t flash_chip_id = g_rom_flashchip.device_id;
+# else
+#  error "unknown arch"
+#endif
+	if ((flash_chip_id & 0xFF0000) == 0x200000) {
+		// https://github.com/espressif/esp-idf/issues/7994
+		logger_.warning(F("Flash chip %08x may be vulnerable to issue espressif/esp-idf#7994"), flash_chip_id);
+		// xmc_check_lock_sr(true);
+	} else {
+		logger_.trace(F("Flash chip %08x ok"), flash_chip_id);
 	}
 #endif
 
