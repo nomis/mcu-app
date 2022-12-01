@@ -48,6 +48,7 @@
 #include "config.h"
 #include "console.h"
 #include "console_stream.h"
+#include "fs.h"
 #include "network.h"
 #include "util.h"
 
@@ -98,7 +99,14 @@ void App::init() {
 	syslog_.start();
 	syslog_.maximum_log_messages(100);
 #endif
+
 	logger_.info(F("System startup (" APP_NAME " " APP_VERSION ")"));
+
+	if (FS_begin(true)) {
+		logger_.debug(F("Mounted filesystem"));
+	} else {
+		logger_.emerg(F("Unable to mount filesystem"));
+	}
 }
 
 void App::start() {

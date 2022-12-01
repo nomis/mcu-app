@@ -119,10 +119,8 @@ MAKE_PSTR_WORD(show)
 MAKE_PSTR_WORD(ssid)
 MAKE_PSTR_WORD(status)
 MAKE_PSTR_WORD(su)
-MAKE_PSTR_WORD(sync)
 MAKE_PSTR_WORD(syslog)
 MAKE_PSTR_WORD(system)
-MAKE_PSTR_WORD(umount)
 #if !defined(ARDUINO_ARCH_ESP8266) && defined(OTA_URL)
 MAKE_PSTR_WORD(update)
 #endif
@@ -826,19 +824,6 @@ static void setup_builtin_commands(std::shared_ptr<Commands> &commands) {
 		}
 	});
 
-	commands->add_command(ShellContext::MAIN, CommandFlags::ADMIN, flash_string_vector{F_(sync)},
-			[] (Shell &shell, const std::vector<std::string> &arguments) {
-		auto msg = F("Unable to mount filesystem");
-		if (FS.begin()) {
-			FS.end();
-			if (!FS.begin()) {
-				shell.logger().alert(msg);
-			}
-		} else {
-			shell.logger().alert(msg);
-		}
-	});
-
 #ifndef ENV_NATIVE
 	commands->add_command(ShellContext::MAIN, CommandFlags::ADMIN, flash_string_vector{F_(syslog), F_(host)}, flash_string_vector{F_(ip_address_optional)},
 			[] (Shell &shell, const std::vector<std::string> &arguments) {
@@ -886,12 +871,6 @@ static void setup_builtin_commands(std::shared_ptr<Commands> &commands) {
 		to_app(shell).config_syslog();
 	});
 #endif
-
-	commands->add_command(ShellContext::MAIN, CommandFlags::ADMIN, flash_string_vector{F_(umount)},
-			[] (Shell &shell, const std::vector<std::string> &arguments) {
-		Config config;
-		config.umount();
-	});
 
 #ifndef ENV_NATIVE
 	commands->add_command(ShellContext::MAIN, CommandFlags::ADMIN | CommandFlags::LOCAL, flash_string_vector{F_(wifi), F_(connect)},

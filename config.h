@@ -30,7 +30,7 @@ namespace app {
 
 class Config {
 public:
-	Config(bool mount = true);
+	Config(bool load = true);
 	~Config() = default;
 
 	std::string admin_password() const;
@@ -63,12 +63,10 @@ public:
 #endif
 
 	void commit();
-	void umount();
 
 private:
 	static uuid::log::Logger logger_;
 
-	static bool mounted_;
 	static bool unavailable_;
 	static bool loaded_;
 

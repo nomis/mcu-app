@@ -245,23 +245,11 @@ static const char __pstr__config_backup_filename[] __attribute__((__aligned__(PS
 static const char __pstr__logger_name[] __attribute__((__aligned__(PSTR_ALIGN))) PROGMEM = "config";
 uuid::log::Logger Config::logger_{FPSTR(__pstr__logger_name), uuid::log::Facility::DAEMON};
 
-bool Config::mounted_ = false;
 bool Config::unavailable_ = false;
 bool Config::loaded_ = false;
 
-Config::Config(bool mount) {
-	if (!unavailable_ && !mounted_ && mount) {
-		logger_.info(F("Mounting filesystem"));
-		if (FS_begin(true)) {
-			logger_.info(F("Mounted filesystem"));
-			mounted_ = true;
-		} else {
-			logger_.alert(F("Unable to mount filesystem"));
-			unavailable_ = true;
-		}
-	}
-
-	if (mounted_ && !loaded_) {
+Config::Config(bool load) {
+	if (!loaded_) {
 		if (read_config(uuid::read_flash_string(FPSTR(__pstr__config_filename)))
 				|| read_config(uuid::read_flash_string(FPSTR(__pstr__config_backup_filename)))) {
 			loaded_ = true;
@@ -269,7 +257,7 @@ Config::Config(bool mount) {
 	}
 
 	if (!loaded_) {
-		if (mount) {
+		if (load) {
 			logger_.err(F("Config failure, using defaults"));
 			read_config_defaults();
 			loaded_ = true;
@@ -292,35 +280,13 @@ void Config::syslog_host(const std::string &syslog_host) {
 }
 
 void Config::commit() {
-	if (!unavailable_ && !mounted_) {
-		logger_.info(F("Mounting filesystem"));
-		if (FS_begin(true)) {
-			logger_.info(F("Mounted filesystem"));
-			mounted_ = true;
-		} else {
-			logger_.alert(F("Unable to mount filesystem"));
-			unavailable_ = true;
+	std::string filename = uuid::read_flash_string(FPSTR(__pstr__config_filename));
+	std::string backup_filename = uuid::read_flash_string(FPSTR(__pstr__config_backup_filename));
+
+	if (write_config(filename)) {
+		if (read_config(filename, false)) {
+			write_config(backup_filename);
 		}
-	}
-
-	if (mounted_) {
-		std::string filename = uuid::read_flash_string(FPSTR(__pstr__config_filename));
-		std::string backup_filename = uuid::read_flash_string(FPSTR(__pstr__config_backup_filename));
-
-		if (write_config(filename)) {
-			if (read_config(filename, false)) {
-				write_config(backup_filename);
-			}
-		}
-	}
-}
-
-void Config::umount() {
-	if (mounted_) {
-		logger_.info(F("Unmounting filesystem"));
-		FS.end();
-		logger_.info(F("Unmounted filesystem"));
-		mounted_ = false;
 	}
 }
 
