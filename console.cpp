@@ -35,6 +35,7 @@
 #include <array>
 #include <cmath>
 #include <cstdio>
+#include <cstdlib>
 #include <limits>
 #include <memory>
 #include <string>
@@ -863,7 +864,7 @@ static void setup_builtin_commands(std::shared_ptr<Commands> &commands) {
 			[] (Shell &shell, const std::vector<std::string> &arguments) {
 		Config config;
 		if (!arguments.empty()) {
-			config.syslog_mark_interval(String(arguments[0].c_str()).toInt());
+			config.syslog_mark_interval(std::atol(arguments[0].c_str()));
 			config.commit();
 		}
 		shell.printfln(F_(mark_interval_is_fmt), config.syslog_mark_interval());
