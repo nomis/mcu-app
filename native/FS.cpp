@@ -245,8 +245,12 @@ File FS::open(const char* path, const char* mode, const bool create) {
 		// mkdir();
 	}
 
-	if (::stat(filename.c_str(), &st) != 0 && mode == std::string{"r"})
-		return File(*this, (FILE*)nullptr, "");
+	if (::stat(filename.c_str(), &st) != 0) {
+		if (mode == std::string{"r"})
+			return File(*this, (FILE*)nullptr, "");
+
+		st.st_mode = S_IFREG;
+	}
 
 	if (S_ISDIR(st.st_mode)) {
 		return File(*this, ::opendir(filename.c_str()), path);
