@@ -242,7 +242,10 @@ File FS::open(const char* path, const char* mode, const bool create) {
 	::mkdir(FS_PREFIX.c_str(), 0777);
 
 	if (create) {
-		// mkdir();
+		std::string copy_path = app::normalise_filename(path);
+
+		if (!mkdir(::dirname(const_cast<char *>(copy_path.c_str()))))
+			return File(*this, (FILE*)nullptr, "");
 	}
 
 	if (::stat(filename.c_str(), &st) != 0) {
