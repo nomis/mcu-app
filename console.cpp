@@ -959,7 +959,7 @@ static void setup_builtin_commands(std::shared_ptr<Commands> &commands) {
 
 		auto from_file = FS.open(from_filename.c_str());
 		const char mode[2] = { 'w', '\0' };
-		auto to_file = FS.open(to_filename.c_str(), mode);
+		auto to_file = FS.open(to_filename.c_str(), mode, true);
 
 		if (!to_file) {
 			shell.printfln(F("%s: open error"), to_filename.c_str());
@@ -1189,7 +1189,7 @@ static void setup_builtin_commands(std::shared_ptr<Commands> &commands) {
 					shell.println(F("Data error: incomplete sequence"));
 				} else {
 					const char mode[2] = { 'w', '\0' };
-					auto file = FS.open(filename.c_str(), mode);
+					auto file = FS.open(filename.c_str(), mode, true);
 
 					if (file) {
 						if (file.write(data.data(), data.size()) != data.size()) {
