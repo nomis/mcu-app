@@ -156,7 +156,7 @@ MAKE_PSTR(wifi_password_fmt, "WiFi Password = %S");
 static constexpr unsigned long INVALID_PASSWORD_DELAY_MS = 3000;
 
 static inline AppShell &to_shell(Shell &shell) {
-	return dynamic_cast<AppShell&>(shell);
+	return static_cast<AppShell&>(shell);
 }
 
 static inline App &to_app(Shell &shell) {
@@ -801,7 +801,7 @@ static void setup_builtin_commands(std::shared_ptr<Commands> &commands) {
 	commands->add_command(ShellContext::MAIN, CommandFlags::USER, flash_string_vector{F_(su)},
 			[=] (Shell &shell, const std::vector<std::string> &arguments) {
 		auto become_admin = [] (Shell &shell) {
-			shell.logger().log(LogLevel::NOTICE, LogFacility::AUTH, F("Admin session opened on console %s"), dynamic_cast<AppShell&>(shell).console_name().c_str());
+			shell.logger().log(LogLevel::NOTICE, LogFacility::AUTH, F("Admin session opened on console %s"), to_shell(shell).console_name().c_str());
 			shell.add_flags(CommandFlags::ADMIN);
 		};
 
@@ -816,7 +816,7 @@ static void setup_builtin_commands(std::shared_ptr<Commands> &commands) {
 						become_admin(shell);
 					} else {
 						shell.delay_until(now + INVALID_PASSWORD_DELAY_MS, [] (Shell &shell) {
-							shell.logger().log(LogLevel::NOTICE, LogFacility::AUTH, F("Invalid admin password on console %s"), dynamic_cast<AppShell&>(shell).console_name().c_str());
+							shell.logger().log(LogLevel::NOTICE, LogFacility::AUTH, F("Invalid admin password on console %s"), to_shell(shell).console_name().c_str());
 							shell.println(F("su: incorrect password"));
 						});
 					}
@@ -1220,7 +1220,8 @@ std::shared_ptr<Commands> AppShell::commands_ = [] {
 	return commands;
 } ();
 
-AppShell::AppShell(App &app) : Shell(), app_(app) {
+AppShell::AppShell(App &app, Stream &stream, unsigned int context, unsigned int flags)
+	: Shell(stream, commands_, context, flags), app_(app) {
 
 }
 
@@ -1315,19 +1316,17 @@ void AppShell::main_exit_user_function(Shell &shell, const std::vector<std::stri
 };
 
 void AppShell::main_exit_admin_function(Shell &shell, const std::vector<std::string> &arguments) {
-	shell.logger().log(LogLevel::INFO, LogFacility::AUTH, "Admin session closed on console %s", dynamic_cast<AppShell&>(shell).console_name().c_str());
+	shell.logger().log(LogLevel::INFO, LogFacility::AUTH, "Admin session closed on console %s", to_shell(shell).console_name().c_str());
 	shell.remove_flags(CommandFlags::ADMIN);
 };
 
 #ifndef ENV_NATIVE
-std::vector<bool> AppStreamConsole::ptys_;
+std::vector<bool> AppConsole::ptys_;
 #endif
 
-AppStreamConsole::AppStreamConsole(App &app, Stream &stream, bool local)
-		: uuid::console::Shell(commands_, ShellContext::MAIN,
+AppConsole::AppConsole(App &app, Stream &stream, bool local)
+		: APP_SHELL_TYPE(app, stream, ShellContext::MAIN,
 			local ? (CommandFlags::USER | CommandFlags::LOCAL) : CommandFlags::USER),
-		  uuid::console::StreamConsole(stream),
-		  APP_SHELL_TYPE(app),
 		  name_(uuid::read_flash_string(F("ttyS0")))
 #ifndef ENV_NATIVE
 		  ,
@@ -1340,10 +1339,8 @@ AppStreamConsole::AppStreamConsole(App &app, Stream &stream, bool local)
 }
 
 #ifndef ENV_NATIVE
-AppStreamConsole::AppStreamConsole(App &app, Stream &stream, const IPAddress &addr, uint16_t port)
-		: uuid::console::Shell(commands_, ShellContext::MAIN, CommandFlags::USER),
-		  uuid::console::StreamConsole(stream),
-		  APP_SHELL_TYPE(app),
+AppConsole::AppConsole(App &app, Stream &stream, const IPAddress &addr, uint16_t port)
+		: APP_SHELL_TYPE(app, stream, ShellContext::MAIN, CommandFlags::USER),
 		  addr_(addr),
 		  port_(port) {
 	std::array<char, 16> text;
@@ -1365,7 +1362,7 @@ AppStreamConsole::AppStreamConsole(App &app, Stream &stream, const IPAddress &ad
 }
 #endif
 
-AppStreamConsole::~AppStreamConsole() {
+AppConsole::~AppConsole() {
 #ifndef ENV_NATIVE
 	if (pty_ != SIZE_MAX) {
 		logger().info(F("Shutdown console %s for connection from [%s]:%u"),
@@ -1377,7 +1374,7 @@ AppStreamConsole::~AppStreamConsole() {
 #endif
 }
 
-std::string AppStreamConsole::console_name() {
+std::string AppConsole::console_name() {
 	return name_;
 }
 

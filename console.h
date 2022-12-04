@@ -48,7 +48,7 @@ enum ShellContext : unsigned int {
 
 class App;
 
-class AppShell: virtual public uuid::console::Shell {
+class AppShell: public uuid::console::Shell {
 public:
 	~AppShell() override = default;
 
@@ -60,7 +60,7 @@ public:
 	App &app_;
 
 protected:
-	AppShell(App &app);
+	AppShell(App &app, Stream &stream, unsigned int context, unsigned int flags);
 
 	static std::shared_ptr<uuid::console::Commands> commands_;
 

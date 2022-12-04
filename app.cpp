@@ -83,7 +83,7 @@ uuid::log::Logger App::logger_{FPSTR(__pstr__logger_name), uuid::log::Facility::
 App::App()
 #ifndef ENV_NATIVE
 		: telnet_([this] (Stream &stream, const IPAddress &addr, uint16_t port) -> std::shared_ptr<uuid::console::Shell> {
-			return std::make_shared<app::AppStreamConsole>(*this, stream, addr, port);
+			return std::make_shared<app::AppConsole>(*this, stream, addr, port);
 		})
 #endif
 	{
@@ -92,7 +92,7 @@ App::App()
 
 void App::init() {
 #ifdef ENV_NATIVE
-	shell_ = std::make_shared<AppStreamConsole>(*this, serial_console_, true);
+	shell_ = std::make_shared<AppConsole>(*this, serial_console_, true);
 	shell_->start();
 	shell_->log_level(uuid::log::Level::TRACE);
 #else
@@ -230,7 +230,7 @@ void App::loop() {
 		} else {
 			int c = serial_console_.read();
 			if (c == '\x03' || c == '\x0C') {
-				shell_ = std::make_shared<AppStreamConsole>(*this, serial_console_, c == '\x0C');
+				shell_ = std::make_shared<AppConsole>(*this, serial_console_, c == '\x0C');
 				shell_->start();
 			}
 		}

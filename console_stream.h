@@ -30,13 +30,13 @@
 
 namespace app {
 
-class AppStreamConsole: public uuid::console::StreamConsole, public APP_SHELL_TYPE {
+class AppConsole: public APP_SHELL_TYPE {
 public:
-	AppStreamConsole(App &app, Stream &stream, bool local);
+	AppConsole(App &app, Stream &stream, bool local);
 #ifndef ENV_NATIVE
-	AppStreamConsole(App &app, Stream &stream, const IPAddress &addr, uint16_t port);
+	AppConsole(App &app, Stream &stream, const IPAddress &addr, uint16_t port);
 #endif
-	~AppStreamConsole() override;
+	~AppConsole() override;
 
 	std::string console_name();
 
