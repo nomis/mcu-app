@@ -121,19 +121,29 @@ bool File::seek(uint32_t pos, SeekMode mode) {
 	if (f_ == nullptr)
 		return false;
 
+	bool ret = false;
+
 	switch (mode) {
 	case SeekSet:
-		return ::fseek(f_, pos, SEEK_SET) == 0;
+		ret = ::fseek(f_, pos, SEEK_SET) == 0;
+		break;
 
 	case SeekCur:
-		return ::fseek(f_, pos, SEEK_CUR) == 0;
+		ret = ::fseek(f_, pos, SEEK_CUR) == 0;
+		break;
 
 	case SeekEnd:
-		return ::fseek(f_, pos, SEEK_END) == 0;
+		ret = ::fseek(f_, pos, SEEK_END) == 0;
+		break;
 
 	default:
-		return false;
+		break;
 	}
+
+	if (ret)
+		peek_ = -1;
+
+	return ret;
 }
 
 size_t File::position() const {
