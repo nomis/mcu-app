@@ -36,6 +36,17 @@ static const std::string FS_PREFIX = ".fs/";
 
 namespace fs {
 
+File::File(FS &fs, FILE *f, std::string filename) : fs_(fs), f_(f) {
+	_timeout = 0;
+	path_ = filename;
+	name_ = app::base_filename(path_);
+}
+File::File(FS &fs, DIR *d, std::string filename) : fs_(fs), d_(d) {
+	_timeout = 0;
+	path_ = filename;
+	name_ = app::base_filename(path_);
+}
+
 File::~File() {
 	close();
 }
@@ -196,7 +207,7 @@ time_t File::getLastWrite() {
 	return 0;
 }
 const char* File::path() const { return path_.c_str(); }
-//const char* File::name() const {}
+const char* File::name() const { return name_.c_str(); }
 
 boolean File::isDirectory(void) { return d_ != nullptr; }
 

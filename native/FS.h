@@ -48,14 +48,8 @@ class FS;
 class File : public Stream
 {
 public:
-	explicit File(FS &fs, FILE *f, std::string filename) : fs_(fs), f_(f) {
-		_timeout = 0;
-		path_ = filename;
-	}
-	explicit File(FS &fs, DIR *d, std::string filename) : fs_(fs), d_(d) {
-		_timeout = 0;
-		path_ = filename;
-	}
+	explicit File(FS &fs, FILE *f, std::string filename);
+	explicit File(FS &fs, DIR *d, std::string filename);
 	~File();
 
 	size_t write(uint8_t) override;
@@ -93,6 +87,7 @@ private:
 	FILE *f_{nullptr};
 	int peek_{-1};
 	std::string path_;
+	std::string name_;
 	DIR *d_{nullptr};
 };
 
