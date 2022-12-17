@@ -367,10 +367,7 @@ static void setup_builtin_commands(std::shared_ptr<Commands> &commands) {
 		shell.enter_context(ShellContext::FILESYSTEM);
 	});
 
-	commands->add_command(ShellContext::MAIN, CommandFlags::USER, flash_string_vector{F_(help)},
-			[] (Shell &shell, const std::vector<std::string> &arguments) {
-		shell.print_all_available_commands();
-	});
+	commands->add_command(ShellContext::MAIN, CommandFlags::USER, flash_string_vector{F_(help)}, AppShell::main_help_function);
 
 	commands->add_command(ShellContext::MAIN, CommandFlags::USER, flash_string_vector{F_(logout)}, AppShell::main_logout_function);
 
@@ -1294,6 +1291,10 @@ void AppShell::end_of_transmission() {
 	} else {
 		invoke_command(uuid::read_flash_string(F_(logout)));
 	}
+}
+
+void AppShell::main_help_function(Shell &shell, const std::vector<std::string> &arguments) {
+	shell.print_all_available_commands();
 }
 
 void AppShell::main_exit_function(Shell &shell, const std::vector<std::string> &arguments) {
