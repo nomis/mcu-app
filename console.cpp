@@ -363,18 +363,16 @@ static std::vector<std::string> log_level_autocomplete(Shell &shell,
 static void setup_builtin_commands(std::shared_ptr<Commands> &commands) {
 	for (unsigned int context = ShellContext::MAIN; context < ShellContext::END; context++) {
 		commands->add_command(context, CommandFlags::USER, {F_(console), F_(log)}, {F_(log_level_optional)}, console_log_level, log_level_autocomplete);
+		commands->add_command(context, CommandFlags::USER, {F_(exit)},
+			context == ShellContext::MAIN ? AppShell::main_exit_function : AppShell::generic_exit_context_function);
+		commands->add_command(context, CommandFlags::USER, {F_(help)}, AppShell::main_help_function);
+		commands->add_command(context, CommandFlags::USER, {F_(logout)}, AppShell::main_logout_function);
 	}
-
-	commands->add_command(ShellContext::MAIN, CommandFlags::USER, flash_string_vector{F_(exit)}, AppShell::main_exit_function);
 
 	commands->add_command(ShellContext::MAIN, CommandFlags::ADMIN, flash_string_vector{F_(fs)},
 			[] (Shell &shell, const std::vector<std::string> &arguments) {
 		shell.enter_context(ShellContext::FILESYSTEM);
 	});
-
-	commands->add_command(ShellContext::MAIN, CommandFlags::USER, flash_string_vector{F_(help)}, AppShell::main_help_function);
-
-	commands->add_command(ShellContext::MAIN, CommandFlags::USER, flash_string_vector{F_(logout)}, AppShell::main_logout_function);
 
 #ifndef ENV_NATIVE
 	commands->add_command(ShellContext::MAIN, CommandFlags::ADMIN | CommandFlags::LOCAL, flash_string_vector{F_(mkfs)},
@@ -902,22 +900,6 @@ static void setup_builtin_commands(std::shared_ptr<Commands> &commands) {
 	});
 #endif
 
-	commands->add_command(ShellContext::FILESYSTEM, CommandFlags::ADMIN, flash_string_vector{F_(exit)},
-			[] (Shell &shell, const std::vector<std::string> &arguments) {
-		shell.exit_context();
-	});
-
-	commands->add_command(ShellContext::FILESYSTEM, CommandFlags::ADMIN, flash_string_vector{F_(help)},
-			[] (Shell &shell, const std::vector<std::string> &arguments) {
-		shell.print_all_available_commands();
-	});
-
-	commands->add_command(ShellContext::FILESYSTEM, CommandFlags::ADMIN, flash_string_vector{F_(logout)},
-			[=] (Shell &shell, const std::vector<std::string> &arguments) {
-		shell.exit_context();
-		AppShell::main_logout_function(shell, NO_ARGUMENTS);
-	});
-
 	commands->add_command(ShellContext::FILESYSTEM, CommandFlags::ADMIN, flash_string_vector{F_(ls)}, flash_string_vector{F_(filename_optional)},
 			[] (Shell &shell, const std::vector<std::string> &arguments) {
 		auto dirname = arguments.empty() ? uuid::read_flash_string(F("/")) : arguments[0];
@@ -1297,6 +1279,10 @@ void AppShell::end_of_transmission() {
 		invoke_command(uuid::read_flash_string(F_(logout)));
 	}
 }
+
+void AppShell::generic_exit_context_function(Shell &shell, const std::vector<std::string> &arguments) {
+	shell.exit_context();
+};
 
 void AppShell::main_help_function(Shell &shell, const std::vector<std::string> &arguments) {
 	shell.print_all_available_commands();
