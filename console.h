@@ -44,6 +44,7 @@ enum ShellContext : unsigned int {
 #if __has_include("../console_shellcontext_enum.h")
 # include "../console_shellcontext_enum.h"
 #endif
+	END
 };
 
 class App;

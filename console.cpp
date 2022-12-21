@@ -340,25 +340,30 @@ retry:
 	return files;
 }
 
-static void setup_builtin_commands(std::shared_ptr<Commands> &commands) {
-	commands->add_command(ShellContext::MAIN, CommandFlags::USER, flash_string_vector{F_(console), F_(log)}, flash_string_vector{F_(log_level_optional)},
-			[] (Shell &shell, const std::vector<std::string> &arguments) {
-		if (!arguments.empty()) {
-			uuid::log::Level level;
+static void console_log_level(Shell &shell, const std::vector<std::string> &arguments) {
+	if (!arguments.empty()) {
+		uuid::log::Level level;
 
-			if (uuid::log::parse_level_lowercase(arguments[0], level)) {
-				shell.log_level(level);
-			} else {
-				shell.printfln(F_(invalid_log_level));
-				return;
-			}
+		if (uuid::log::parse_level_lowercase(arguments[0], level)) {
+			shell.log_level(level);
+		} else {
+			shell.printfln(F_(invalid_log_level));
+			return;
 		}
-		shell.printfln(F_(log_level_is_fmt), uuid::log::format_level_uppercase(shell.log_level()));
-	},
-	[] (Shell &shell, const std::vector<std::string> &current_arguments,
-			const std::string &next_argument) -> std::vector<std::string> {
-		return uuid::log::levels_lowercase();
-	});
+	}
+	shell.printfln(F_(log_level_is_fmt), uuid::log::format_level_uppercase(shell.log_level()));
+}
+
+static std::vector<std::string> log_level_autocomplete(Shell &shell,
+		const std::vector<std::string> &current_arguments,
+		const std::string &next_argument) {
+	return uuid::log::levels_lowercase();
+}
+
+static void setup_builtin_commands(std::shared_ptr<Commands> &commands) {
+	for (unsigned int context = ShellContext::MAIN; context < ShellContext::END; context++) {
+		commands->add_command(context, CommandFlags::USER, {F_(console), F_(log)}, {F_(log_level_optional)}, console_log_level, log_level_autocomplete);
+	}
 
 	commands->add_command(ShellContext::MAIN, CommandFlags::USER, flash_string_vector{F_(exit)}, AppShell::main_exit_function);
 
