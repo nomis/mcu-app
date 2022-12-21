@@ -60,6 +60,8 @@ public:
 	static void main_exit_function(Shell &shell, const std::vector<std::string> &arguments);
 	static void main_logout_function(Shell &shell, const std::vector<std::string> &arguments);
 
+	virtual void set_command(Shell &shell);
+
 	App &app_;
 
 protected:

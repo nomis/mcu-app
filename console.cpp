@@ -532,19 +532,7 @@ static void setup_builtin_commands(std::shared_ptr<Commands> &commands) {
 
 	commands->add_command(ShellContext::MAIN, CommandFlags::USER, flash_string_vector{F_(set)},
 			[] (Shell &shell, const std::vector<std::string> &arguments) {
-		Config config;
-		if (shell.has_flags(CommandFlags::ADMIN | CommandFlags::LOCAL)) {
-			shell.printfln(F_(wifi_ssid_fmt), config.wifi_ssid().empty() ? uuid::read_flash_string(F_(unset)).c_str() : config.wifi_ssid().c_str());
-			shell.printfln(F_(wifi_password_fmt), config.wifi_password().empty() ? F_(unset) : F_(asterisks));
-		}
-#if defined(ARDUINO_ARCH_ESP8266)
-		if (shell.has_flags(CommandFlags::ADMIN)) {
-			shell.printfln(F_(ota_enabled_fmt), config.ota_enabled() ? F_(enabled) : F_(disabled));
-		}
-		if (shell.has_flags(CommandFlags::ADMIN | CommandFlags::LOCAL)) {
-			shell.printfln(F_(ota_password_fmt), config.ota_password().empty() ? F_(unset) : F_(asterisks));
-		}
-#endif
+		to_shell(shell).set_command(shell);
 	});
 
 	commands->add_command(ShellContext::MAIN, CommandFlags::ADMIN, flash_string_vector{F_(set), F_(hostname)}, flash_string_vector{F_(name_optional)},
@@ -1311,6 +1299,22 @@ void AppShell::main_exit_admin_function(Shell &shell, const std::vector<std::str
 	shell.logger().log(LogLevel::INFO, LogFacility::AUTH, "Admin session closed on console %s", to_shell(shell).console_name().c_str());
 	shell.remove_flags(CommandFlags::ADMIN);
 };
+
+void AppShell::set_command(Shell &shell) {
+	Config config;
+	if (shell.has_flags(CommandFlags::ADMIN | CommandFlags::LOCAL)) {
+		shell.printfln(F_(wifi_ssid_fmt), config.wifi_ssid().empty() ? uuid::read_flash_string(F_(unset)).c_str() : config.wifi_ssid().c_str());
+		shell.printfln(F_(wifi_password_fmt), config.wifi_password().empty() ? F_(unset) : F_(asterisks));
+	}
+#if defined(ARDUINO_ARCH_ESP8266)
+	if (shell.has_flags(CommandFlags::ADMIN)) {
+		shell.printfln(F_(ota_enabled_fmt), config.ota_enabled() ? F_(enabled) : F_(disabled));
+	}
+	if (shell.has_flags(CommandFlags::ADMIN | CommandFlags::LOCAL)) {
+		shell.printfln(F_(ota_password_fmt), config.ota_password().empty() ? F_(unset) : F_(asterisks));
+	}
+#endif
+}
 
 #ifndef ENV_NATIVE
 std::vector<bool> AppConsole::ptys_;
