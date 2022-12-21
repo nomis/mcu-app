@@ -221,10 +221,14 @@ static void list_file(Shell &shell, fs::File &file) {
 	}
 }
 
-static bool fs_allowed(const std::string &filename) {
-	std::string path = normalise_filename(filename);
+static bool fs_allowed(Shell &shell, const std::string &filename) {
+	if (shell.has_any_flags(CommandFlags::LOCAL)) {
+		return true;
+	} else {
+		std::string path = normalise_filename(filename);
 
-	return path.find(uuid::read_flash_string(F("/config.")), 0) != 0;
+		return path.find(uuid::read_flash_string(F("/config.")), 0) != 0;
+	}
 }
 
 static bool fs_valid_file(Shell &shell, const std::string &filename, bool allow_dir = false) {
@@ -240,7 +244,7 @@ static bool fs_valid_file(Shell &shell, const std::string &filename, bool allow_
 		return false;
 	}
 
-	if (!fs_allowed(filename)) {
+	if (!fs_allowed(shell, filename)) {
 		shell.printfln(F("%s: access denied"), filename.c_str());
 		return false;
 	}
@@ -261,7 +265,7 @@ static bool fs_valid_dir(Shell &shell, const std::string &dirname, bool must_exi
 		return false;
 	}
 
-	if (!fs_allowed(dirname)) {
+	if (!fs_allowed(shell, dirname)) {
 		shell.printfln(F("%s: access denied"), dirname.c_str());
 		return false;
 	}
@@ -273,7 +277,7 @@ static bool fs_valid_mv_cp(Shell &shell, const std::string &from_filename, std::
 	if (!fs_valid_file(shell, from_filename, allow_dir))
 		return false;
 
-	if (!fs_allowed(to_filename)) {
+	if (!fs_allowed(shell, to_filename)) {
 		shell.printfln(F("%s: access denied"), to_filename.c_str());
 		return false;
 	}
@@ -286,7 +290,7 @@ static bool fs_valid_mv_cp(Shell &shell, const std::string &from_filename, std::
 
 			to_filename.append(base_filename(from_filename));
 
-			if (!fs_allowed(to_filename)) {
+			if (!fs_allowed(shell, to_filename)) {
 				shell.printfln(F("%s: access denied"), to_filename.c_str());
 				return false;
 			}
@@ -1004,7 +1008,7 @@ static void setup_builtin_commands(std::shared_ptr<Commands> &commands) {
 				return;
 			}
 
-			if (!fs_allowed(filename)) {
+			if (!fs_allowed(shell, filename)) {
 				shell.printfln(F("%s: access denied"), filename.c_str());
 				return;
 			}
@@ -1074,7 +1078,7 @@ static void setup_builtin_commands(std::shared_ptr<Commands> &commands) {
 			}
 		}
 
-		if (!fs_allowed(filename)) {
+		if (!fs_allowed(shell, filename)) {
 			shell.printfln(F("%s: access denied"), filename.c_str());
 			return;
 		}
