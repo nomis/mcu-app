@@ -1244,14 +1244,13 @@ std::string AppShell::hostname_text() {
 }
 
 std::string AppShell::context_text() {
-	switch (static_cast<ShellContext>(context())) {
-	case ShellContext::MAIN:
+	auto shell_context = static_cast<ShellContext>(context());
+
+	if (shell_context == ShellContext::MAIN) {
 		return std::string{'/'};
-
-	case ShellContext::FILESYSTEM:
+	} else if (shell_context == ShellContext::FILESYSTEM) {
 		return uuid::read_flash_string(F("/fs"));
-
-	default:
+	} else {
 		return std::string{};
 	}
 }
