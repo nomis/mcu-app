@@ -24,6 +24,10 @@
 #endif
 
 #ifdef ARDUINO_ARCH_ESP32
+# pragma GCC diagnostic push
+# pragma GCC diagnostic ignored "-Wswitch-enum"
+# include <esp_crt_bundle.h>
+# pragma GCC diagnostic pop
 # include <esp_ota_ops.h>
 # include <rom/rtc.h>
 # include <rom/spi_flash.h>
@@ -64,6 +68,9 @@ static_assert(uuid::thread_safe, "uuid-common must be thread-safe");
 static_assert(uuid::log::thread_safe, "uuid-log must be thread-safe");
 static_assert(uuid::syslog::thread_safe, "uuid-syslog must be thread-safe");
 static_assert(uuid::console::thread_safe, "uuid-console must be thread-safe");
+
+extern const uint8_t x509_crt_bundle_start[] asm("_binary_src_app_pio_certs_x509_crt_bundle_start");
+extern const uint8_t x509_crt_bundle_end[]   asm("_binary_src_app_pio_certs_x509_crt_bundle_end");
 
 # if !CONFIG_BOOTLOADER_APP_ROLLBACK_ENABLE
 #  error "Need CONFIG_BOOTLOADER_APP_ROLLBACK_ENABLE for OTA"
@@ -187,6 +194,22 @@ void App::start() {
 		serial_console_.println();
 		serial_console_.println(F(APP_NAME " " APP_VERSION));
 	}
+
+#if defined(ARDUINO_ARCH_ESP32)
+	uint16_t num_certs = 0;
+
+	if (x509_crt_bundle_end - x509_crt_bundle_start >= 2) {
+		num_certs = (x509_crt_bundle_start[0] << 8) | x509_crt_bundle_start[1];
+
+		esp_crt_bundle_set(x509_crt_bundle_start);
+	}
+
+	if (num_certs > 0) {
+		logger_.trace(F("Configured %u CA certificates"), num_certs);
+	} else {
+		logger_.crit(F("No CA certificates"));
+	}
+#endif
 
 	network_.start();
 	config_syslog();
