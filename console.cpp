@@ -110,8 +110,8 @@ MAKE_PSTR_WORD(ota)
 MAKE_PSTR_WORD(passwd)
 MAKE_PSTR_WORD(password)
 MAKE_PSTR_WORD(read)
+MAKE_PSTR_WORD(reboot)
 MAKE_PSTR_WORD(reconnect)
-MAKE_PSTR_WORD(restart)
 MAKE_PSTR_WORD(rm)
 MAKE_PSTR_WORD(rmdir)
 MAKE_PSTR_WORD(scan)
@@ -528,7 +528,7 @@ static void setup_builtin_commands(std::shared_ptr<Commands> &commands) {
 	});
 
 #ifndef ENV_NATIVE
-	commands->add_command(ShellContext::MAIN, CommandFlags::ADMIN, flash_string_vector{F_(restart)},
+	commands->add_command(ShellContext::MAIN, CommandFlags::ADMIN, flash_string_vector{F_(reboot)},
 		[] (Shell &shell, const std::vector<std::string> &arguments) {
 			ESP.restart();
 	});
