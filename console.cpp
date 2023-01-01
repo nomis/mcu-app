@@ -770,7 +770,9 @@ static void setup_builtin_commands(std::shared_ptr<Commands> &commands) {
 			shell.add_flags(CommandFlags::ADMIN);
 		};
 
-		if (shell.has_flags(CommandFlags::LOCAL)) {
+		if (shell.has_flags(CommandFlags::ADMIN)) {
+			return;
+		} else if (shell.has_flags(CommandFlags::LOCAL)) {
 			become_admin(shell);
 		} else {
 			shell.enter_password(F_(password_prompt), [=] (Shell &shell, bool completed, const std::string &password) {
