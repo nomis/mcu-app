@@ -29,8 +29,9 @@ def genhdr_before_build(env, node):
 	global run
 
 	if not run:
+		# PlatformIO sets PYTHONPATH which may break virtualenv
 		subprocess.run(
-			["make", "-C", env["PROJECT_SRC_DIR"] + "/app/pio/certs", "-L"],
+			["env", "-u" "PYTHONPATH", "make", "-C", env["PROJECT_SRC_DIR"] + "/app/pio/certs", "-L"],
 			check=True, universal_newlines=True)
 		run = True
 
