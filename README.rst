@@ -22,3 +22,8 @@ Documentation
 -------------
 
 None; look at the documentation for the libraries it uses.
+
+This project exists for my own convenience to avoid duplicating the
+same basic things in every application project. It's not intended to be
+separately reusable, versioned or forward/backward compatible. Much of
+it is a mess and not particularly well designed.
