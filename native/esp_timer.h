@@ -1,6 +1,6 @@
 /*
  * mcu-app - Microcontroller application framework
- * Copyright 2022  Simon Arlott
+ * Copyright 2022-2023  Simon Arlott
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,8 +18,14 @@
 
 #pragma once
 
-#include <Arduino.h>
+#include <stdint.h>
 
-static inline uint64_t esp_timer_get_time(void) {
-	return micros();
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+uint64_t esp_timer_get_time(void);
+
+#ifdef __cplusplus
 }
+#endif

@@ -1,6 +1,6 @@
 /*
  * mcu-app - Microcontroller application framework
- * Copyright 2022  Simon Arlott
+ * Copyright 2022-2023  Simon Arlott
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -149,4 +149,11 @@ int vsnprintf_P(char *str, size_t size, const char *format, va_list ap) {
 	return vsnprintf(str, size, native_format.c_str(), ap);
 }
 
+extern "C" {
+
+uint64_t esp_timer_get_time(void) {
+	return micros();
+}
+
+}
 #endif
