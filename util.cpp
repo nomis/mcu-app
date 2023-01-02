@@ -147,6 +147,20 @@ bool read_text(cbor::Reader &reader, std::string &text) {
 	return true;
 }
 
+bool expect_float(cbor::Reader &reader, float &value) {
+	auto data_type = reader.readDataType();
+
+	if (data_type == cbor::DataType::kFloat) {
+		value = reader.getFloat();
+	} else if (data_type == cbor::DataType::kDouble) {
+		value = reader.getDouble();
+	} else {
+		return false;
+	}
+
+	return true;
+}
+
 #ifdef ARDUINO_ARCH_ESP32
 std::string reset_reason_string(RESET_REASON reason) {
 	const __FlashStringHelper *text = F("unknown");

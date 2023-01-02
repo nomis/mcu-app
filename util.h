@@ -54,6 +54,8 @@ void write_text(qindesign::cbor::Writer &writer, const char *text);
 void write_text(qindesign::cbor::Writer &writer, const __FlashStringHelper *text);
 bool read_text(qindesign::cbor::Reader &reader, std::string &text);
 
+bool expect_float(qindesign::cbor::Reader &reader, float &value);
+
 #ifdef ARDUINO_ARCH_ESP32
 std::string reset_reason_string(RESET_REASON reason);
 std::string wakeup_cause_string(WAKEUP_REASON cause);
