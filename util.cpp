@@ -1,6 +1,6 @@
 /*
  * mcu-app - Microcontroller application framework
- * Copyright 2022  Simon Arlott
+ * Copyright 2022-2023  Simon Arlott
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -154,6 +154,10 @@ bool expect_float(cbor::Reader &reader, float &value) {
 		value = reader.getFloat();
 	} else if (data_type == cbor::DataType::kDouble) {
 		value = reader.getDouble();
+	} else if (data_type == cbor::DataType::kUnsignedInt) {
+		value = reader.getUnsignedInt();
+	} else if (data_type == cbor::DataType::kNegativeInt) {
+		value = reader.getInt();
 	} else {
 		return false;
 	}
