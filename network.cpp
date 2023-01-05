@@ -1,6 +1,6 @@
 /*
  * mcu-app - Microcontroller application framework
- * Copyright 2022  Simon Arlott
+ * Copyright 2022-2023  Simon Arlott
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -60,6 +60,7 @@ uuid::log::Logger Network::logger_{FPSTR(__pstr__logger_name), uuid::log::Facili
 
 void Network::start() {
 	WiFi.persistent(false);
+	WiFi.setAutoReconnect(false);
 
 #if defined(ARDUINO_ARCH_ESP8266)
 	WiFi.onStationModeConnected(std::bind(&Network::sta_mode_connected, this, std::placeholders::_1));
@@ -118,6 +119,11 @@ void Network::sta_mode_disconnected(const WiFiEventStationModeDisconnected &even
 			event.ssid.c_str(),
 			event.bssid[0], event.bssid[1], event.bssid[2], event.bssid[3], event.bssid[4], event.bssid[5],
 			event.reason);
+
+	if (connect_) {
+		WiFi.disconnect();
+		WiFi.begin();
+	}
 }
 
 void Network::sta_mode_got_ip(const WiFiEventStationModeGotIP &event) {
@@ -153,7 +159,15 @@ void Network::sta_mode_disconnected(arduino_event_id_t event, arduino_event_info
 		conn.bssid[0], conn.bssid[1], conn.bssid[2], conn.bssid[3], conn.bssid[4], conn.bssid[5],
 		conn.reason);
 
+	if (connect_) {
+		WiFi.disconnect();
+	}
+
 	configure_ntp();
+
+	if (connect_) {
+		WiFi.begin();
+	}
 }
 
 void Network::sta_mode_got_ip(arduino_event_id_t event, arduino_event_info_t info) {
@@ -192,6 +206,7 @@ void Network::connect() {
 	WiFi.mode(WIFI_STA);
 
 	if (!config.wifi_ssid().empty()) {
+		connect_ = true;
 		WiFi.begin(config.wifi_ssid().c_str(), config.wifi_password().c_str());
 	}
 }
@@ -202,6 +217,8 @@ void Network::reconnect() {
 }
 
 void Network::disconnect() {
+	connect_ = false;
+
 	WiFi.disconnect();
 }
 
