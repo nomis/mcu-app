@@ -1,6 +1,6 @@
 /*
  * mcu-app - Microcontroller application framework
- * Copyright 2022  Simon Arlott
+ * Copyright 2022-2023  Simon Arlott
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -236,7 +236,8 @@ static bool fs_allowed(Shell &shell, const std::string &filename) {
 }
 
 static bool fs_valid_file(Shell &shell, const std::string &filename, bool allow_dir = false) {
-	auto file = FS.open(filename.c_str());
+	const char mode[2] = { 'r', '\0' };
+	auto file = FS.open(filename.c_str(), mode);
 
 	if (!file) {
 		shell.printfln(F("%s: file not found"), filename.c_str());
@@ -870,7 +871,8 @@ static void setup_builtin_commands(std::shared_ptr<Commands> &commands) {
 	commands->add_command(ShellContext::FILESYSTEM, CommandFlags::ADMIN, flash_string_vector{F_(ls)}, flash_string_vector{F_(filename_optional)},
 			[] (Shell &shell, const std::vector<std::string> &arguments) {
 		auto dirname = arguments.empty() ? uuid::read_flash_string(F("/")) : arguments[0];
-		auto dir = FS.open(dirname.c_str());
+		const char mode[2] = { 'r', '\0' };
+		auto dir = FS.open(dirname.c_str(), mode);
 		if (dir) {
 			for (auto &filename : fs_autocomplete(shell, {}, dirname)) {
 				auto file = FS.open(filename.c_str());
@@ -908,9 +910,10 @@ static void setup_builtin_commands(std::shared_ptr<Commands> &commands) {
 		if (!fs_valid_mv_cp(shell, from_filename, to_filename))
 			return;
 
-		auto from_file = FS.open(from_filename.c_str());
-		const char mode[2] = { 'w', '\0' };
-		auto to_file = FS.open(to_filename.c_str(), mode, true);
+		const char read_mode[2] = { 'r', '\0' };
+		auto from_file = FS.open(from_filename.c_str(), read_mode);
+		const char write_mode[2] = { 'w', '\0' };
+		auto to_file = FS.open(to_filename.c_str(), write_mode, true);
 
 		if (!to_file) {
 			shell.printfln(F("%s: open error"), to_filename.c_str());
@@ -975,7 +978,8 @@ static void setup_builtin_commands(std::shared_ptr<Commands> &commands) {
 		auto &filename = arguments[0];
 
 		uint8_t buf[58];
-		auto file = FS.open(filename.c_str());
+		const char mode[2] = { 'r', '\0' };
+		auto file = FS.open(filename.c_str(), mode);
 
 		if (file) {
 			if (file.isDirectory()) {
@@ -1045,7 +1049,8 @@ static void setup_builtin_commands(std::shared_ptr<Commands> &commands) {
 		auto filename = arguments[0];
 
 		{
-			auto file = FS.open(filename.c_str());
+			const char mode[2] = { 'r', '\0' };
+			auto file = FS.open(filename.c_str(), mode);
 
 			if (file && file.isDirectory()) {
 				shell.printfln(F("%s: is a directory"), filename.c_str());

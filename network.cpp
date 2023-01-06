@@ -326,6 +326,9 @@ void Network::print_status(uuid::console::Shell &shell) {
 		break;
 
 	case WL_NO_SHIELD:
+#ifdef ARDUINO_ARCH_ESP8266
+	case WL_WRONG_PASSWORD:
+#endif
 	default:
 		shell.printfln(F("WiFi: unknown"));
 		break;

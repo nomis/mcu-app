@@ -1,6 +1,6 @@
 /*
  * mcu-app - Microcontroller application framework
- * Copyright 2022  Simon Arlott
+ * Copyright 2022-2023  Simon Arlott
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -292,7 +292,8 @@ void Config::commit() {
 
 bool Config::read_config(const std::string &filename, bool load) {
 	logger_.info(F("Reading config file %s"), filename.c_str());
-	auto file = FS.open(filename.c_str());
+	const char mode[2] = {'r', '\0'};
+	auto file = FS.open(filename.c_str(), mode);
 	if (file) {
 		cbor::Reader reader{file};
 
