@@ -423,7 +423,7 @@ static void setup_builtin_commands(std::shared_ptr<Commands> &commands) {
 		esp_https_ota_config_t ota_config{};
 		esp_https_ota_handle_t handle{};
 
-		http_config.crt_bundle_attach = esp_crt_bundle_attach;
+		http_config.crt_bundle_attach = arduino_esp_crt_bundle_attach;
 		http_config.keep_alive_enable = true;
 		http_config.disable_auto_redirect = true;
 		http_config.url = OTA_URL;

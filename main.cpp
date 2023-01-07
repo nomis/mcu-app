@@ -16,6 +16,14 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+extern "C" {
+
 bool verifyRollbackLater() {
 	return true;
+}
+
+bool testSPIRAM() {
+	return true;
+}
+
 }

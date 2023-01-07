@@ -1,6 +1,6 @@
 /*
  * mcu-app - Microcontroller application framework
- * Copyright 2022  Simon Arlott
+ * Copyright 2022-2023  Simon Arlott
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -201,7 +201,7 @@ void App::start() {
 	if (x509_crt_bundle_end - x509_crt_bundle_start >= 2) {
 		num_certs = (x509_crt_bundle_start[0] << 8) | x509_crt_bundle_start[1];
 
-		esp_crt_bundle_set(x509_crt_bundle_start);
+		arduino_esp_crt_bundle_set(x509_crt_bundle_start);
 	}
 
 	if (num_certs > 0) {
