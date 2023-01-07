@@ -131,11 +131,14 @@ void write_text(cbor::Writer &writer, const __FlashStringHelper *text) {
 	write_text(writer, uuid::read_flash_string(text));
 }
 
-bool read_text(cbor::Reader &reader, std::string &text) {
+bool read_text(cbor::Reader &reader, std::string &text, size_t max_length) {
 	uint64_t length;
 	bool indefinite;
 
 	if (!cbor::expectText(reader, &length, &indefinite) || indefinite)
+		return false;
+
+	if (length > max_length)
 		return false;
 
 	std::vector<char> data(length + 1);

@@ -1,6 +1,6 @@
 /*
  * mcu-app - Microcontroller application framework
- * Copyright 2022  Simon Arlott
+ * Copyright 2022-2023  Simon Arlott
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -52,7 +52,7 @@ std::string base_filename(const std::string &filename);
 void write_text(qindesign::cbor::Writer &writer, const std::string &text);
 void write_text(qindesign::cbor::Writer &writer, const char *text);
 void write_text(qindesign::cbor::Writer &writer, const __FlashStringHelper *text);
-bool read_text(qindesign::cbor::Reader &reader, std::string &text);
+bool read_text(qindesign::cbor::Reader &reader, std::string &text, size_t max_length = 256);
 
 bool expect_float(qindesign::cbor::Reader &reader, float &value);
 
