@@ -324,12 +324,12 @@ retry:
 			path = dir.path();
 			if (path.empty() || path.back() != '/')
 				path.push_back('/');
-			files.emplace_back(path);
+			files.push_back(path);
 
 			while (1) {
-				auto file = dir.openNextFile();
-				if (file) {
-					files.emplace_back(file.path());
+				auto name = dir.getNextFileName();
+				if (name.length() > 0) {
+					files.emplace_back(name.c_str());
 				} else {
 					break;
 				}

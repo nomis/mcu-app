@@ -240,6 +240,35 @@ File File::openNextFile(const char *mode) {
 	return fs_.open((path_ + slash + dirp->d_name).c_str(), mode);
 }
 
+std::string File::getNextFileName(void) {
+	static const std::string this_dir{"."};
+	static const std::string parent_dir{".."};
+	struct dirent *dirp;
+
+	do {
+		dirp = ::readdir(d_);
+		if (dirp != nullptr) {
+			if (dirp->d_type != DT_REG && dirp->d_type != DT_DIR)
+				continue;
+
+			if (dirp->d_name == this_dir || dirp->d_name == parent_dir)
+				continue;
+
+			break;
+		}
+	} while (dirp != nullptr);
+
+	if (dirp == nullptr)
+		return "";
+
+	std::string slash = "/";
+
+	if (!path_.empty() && path_.back() == '/')
+		slash = "";
+
+	return path_ + slash + dirp->d_name;
+}
+
 void File::rewindDirectory(void) {
 	::rewinddir(d_);
 }

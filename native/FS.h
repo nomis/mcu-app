@@ -80,6 +80,7 @@ public:
 
 	boolean isDirectory(void);
 	File openNextFile(const char* mode = FILE_READ);
+	/* String */ std::string getNextFileName(void);
 	void rewindDirectory(void);
 
 private:
