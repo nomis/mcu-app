@@ -634,10 +634,10 @@ static void setup_builtin_commands(std::shared_ptr<Commands> &commands) {
 		shell.printfln(F("Minimum free heap:        %lu bytes"), (unsigned long)ESP.getMinFreeHeap());
 		shell.printfln(F("Maximum heap block size:  %lu bytes"), (unsigned long)ESP.getMaxAllocHeap());
 		shell.println();
-		shell.printfln(F("PSRAM size:                %lu bytes"), (unsigned long)ESP.getPsramSize());
-		shell.printfln(F("Free PSRAM:                %lu bytes"), (unsigned long)ESP.getFreePsram());
-		shell.printfln(F("Minimum free PSRAM:        %lu bytes"), (unsigned long)ESP.getMinFreePsram());
-		shell.printfln(F("Maximum PSRAM block size:  %lu bytes"), (unsigned long)ESP.getMaxAllocPsram());
+		shell.printfln(F("PSRAM size:               %lu bytes"), (unsigned long)ESP.getPsramSize());
+		shell.printfln(F("Free PSRAM:               %lu bytes"), (unsigned long)ESP.getFreePsram());
+		shell.printfln(F("Minimum free PSRAM:       %lu bytes"), (unsigned long)ESP.getMinFreePsram());
+		shell.printfln(F("Maximum PSRAM block size: %lu bytes"), (unsigned long)ESP.getMaxAllocPsram());
 #else
 # error "Unknown arch"
 #endif
