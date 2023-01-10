@@ -726,11 +726,11 @@ static void setup_builtin_commands(std::shared_ptr<Commands> &commands) {
 		FSInfo info;
 		if (FS.info(info)) {
 			shell.printfln(F("FS size:       %zu bytes (block size %zu bytes, page size %zu bytes)"), info.totalBytes, info.blockSize, info.pageSize);
-			shell.printfln(F("FS used:       %zu bytes (%.2f%%)"), info.usedBytes, (float)info.usedBytes / (float)info.totalBytes);
+			shell.printfln(F("FS used:       %zu bytes (%.2f%%)"), info.usedBytes, (float)info.usedBytes / (float)info.totalBytes * 100);
 		}
 #elif defined(ARDUINO_ARCH_ESP32)
 		shell.printfln(F("FS size:       %zu bytes"), FS.totalBytes());
-		shell.printfln(F("FS used:       %zu bytes (%.2f%%)"), FS.usedBytes(), (float)FS.usedBytes() / (float)FS.totalBytes());
+		shell.printfln(F("FS used:       %zu bytes (%.2f%%)"), FS.usedBytes(), (float)FS.usedBytes() / (float)FS.totalBytes() * 100);
 #else
 # error "Unknown arch"
 #endif
