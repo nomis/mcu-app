@@ -77,6 +77,9 @@ protected:
 	App();
 
 	bool local_console_enabled() { return CONSOLE_PIN >= 0 && local_console_; }
+#ifndef ARDUINO_ARCH_ESP8266
+	inline const std::string& app_hash() const { return app_hash_; }
+#endif
 
 private:
 	void shell_prompt();
@@ -89,6 +92,8 @@ private:
 	bool local_console_;
 #ifdef ARDUINO_ARCH_ESP8266
 	bool ota_running_ = false;
+#else
+	std::string app_hash_;
 #endif
 };
 

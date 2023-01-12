@@ -158,7 +158,8 @@ void App::start() {
 	logger_.info(F("OTA partition: %s %d (%S)"), part ? part->label : nullptr, state, ota_state_string(state));
 	if (desc != nullptr) {
 		logger_.info(F("App build: %s %s"), desc->date, desc->time);
-		logger_.info(F("App hash: %s"), hex_string(desc->app_elf_sha256, sizeof(desc->app_elf_sha256)).c_str());
+		app_hash_ = hex_string(desc->app_elf_sha256, sizeof(desc->app_elf_sha256));
+		logger_.info(F("App hash: %s"), app_hash_.c_str());
 	}
 #endif
 
