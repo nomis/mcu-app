@@ -35,10 +35,14 @@
 
 #ifdef ENV_NATIVE
 # include <stdlib.h>
+# include <sys/types.h>
+# include <time.h>
+# include <unistd.h>
 #endif
 
 #include <initializer_list>
 #include <memory>
+#include <string>
 #include <vector>
 
 #include <uuid/common.h>
@@ -161,6 +165,14 @@ void App::start() {
 		app_hash_ = hex_string(desc->app_elf_sha256, sizeof(desc->app_elf_sha256));
 		logger_.info(F("App hash: %s"), app_hash_.c_str());
 	}
+#endif
+
+#ifdef ENV_NATIVE
+	struct timespec now;
+	clock_gettime(CLOCK_REALTIME, &now);
+	app_hash_ = std::to_string(getuid()) + "-" + std::to_string(getgid())
+		+ "-" + std::to_string(getpid()) + "-" + std::to_string(now.tv_sec)
+		+ "." + std::to_string(now.tv_nsec);
 #endif
 
 #ifndef ENV_NATIVE
