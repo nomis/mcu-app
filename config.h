@@ -1,6 +1,6 @@
 /*
  * mcu-app - Microcontroller application framework
- * Copyright 2022  Simon Arlott
+ * Copyright 2022-2023  Simon Arlott
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,6 +18,11 @@
 
 #pragma once
 
+#include "util.h"
+
+#if MCU_APP_THREAD_SAFE
+# include <shared_mutex>
+#endif
 #include <string>
 
 #include <CBOR.h>
@@ -80,6 +85,9 @@ private:
 #if defined(ARDUINO_ARCH_ESP8266)
 	static bool ota_enabled_;
 	static std::string ota_password_;
+#endif
+#if MCU_APP_THREAD_SAFE
+	static std::shared_mutex data_mutex_;
 #endif
 
 	bool read_config(const std::string &filename, bool load = true);

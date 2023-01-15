@@ -47,6 +47,14 @@
 namespace cbor = qindesign::cbor;
 
 namespace app {
+#if MCU_APP_THREAD_SAFE
+# define READ_LOCK() std::shared_lock{data_mutex_}
+# define WRITE_LOCK() std::unique_lock{data_mutex_}
+#else
+# define READ_LOCK() do { } while (0)
+# define WRITE_LOCK() do { } while (0)
+#endif
+
 #ifdef ARDUINO_ARCH_ESP8266
 # define MCU_APP_INTERNAL_CONFIG_DATA_OTA \
 		MCU_APP_CONFIG_PRIMITIVE(bool, "", ota_enabled, "", true) \
@@ -82,6 +90,10 @@ MCU_APP_INTERNAL_CONFIG_DATA
 #define MCU_APP_CONFIG_GENERIC(__type, __key_prefix, __name, __key_suffix, __read_default, ...) + 1
 static constexpr const size_t config_num_keys = (0 MCU_APP_INTERNAL_CONFIG_DATA);
 #undef MCU_APP_CONFIG_GENERIC
+
+#if MCU_APP_THREAD_SAFE
+std::shared_mutex Config::data_mutex_;
+#endif
 
 void Config::read_config_defaults() {
 #define MCU_APP_CONFIG_GENERIC(__type, __key_prefix, __name, __key_suffix, __read_default, ...) \
@@ -210,9 +222,11 @@ void Config::write_config(cbor::Writer &writer) {
 /* Create getters/setters for simple config items */
 #define MCU_APP_CONFIG_SIMPLE(__type, __key_prefix, __name, __key_suffix, __read_default, ...) \
 		__type Config::__name() const { \
+			READ_LOCK(); \
 			return __name##_; \
 		} \
 		void Config::__name(const __type &__name) { \
+			WRITE_LOCK(); \
 			__name##_ = __name; \
 		}
 
@@ -220,15 +234,18 @@ void Config::write_config(cbor::Writer &writer) {
 #define MCU_APP_CONFIG_ENUM MCU_APP_CONFIG_PRIMITIVE
 #define MCU_APP_CONFIG_PRIMITIVE(__type, __key_prefix, __name, __key_suffix, __read_default, ...) \
 		__type Config::__name() const { \
+			READ_LOCK(); \
 			return __name##_; \
 		} \
 		void Config::__name(__type __name) { \
+			WRITE_LOCK(); \
 			__name##_ = __name; \
 		}
 
 /* Create getters for config items with custom setters */
 #define MCU_APP_CONFIG_CUSTOM(__type, __key_prefix, __name, __key_suffix, __read_default, ...) \
 		__type Config::__name() const { \
+			READ_LOCK(); \
 			return __name##_; \
 		}
 
@@ -268,6 +285,7 @@ Config::Config(bool load) {
 }
 
 void Config::syslog_host(const std::string &syslog_host) {
+	WRITE_LOCK();
 #ifndef ENV_NATIVE
 	IPAddress addr;
 

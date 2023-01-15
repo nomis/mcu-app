@@ -25,7 +25,24 @@
 # include <rom/rtc.h>
 #endif
 
+#if __has_include(<mutex>)
+# include <mutex>
+#endif
 #include <string>
+
+#ifndef MCU_APP_STD_MUTEX_AVAILABLE
+# if __has_include(<mutex>) && (!defined(_GLIBCXX_MUTEX) || defined(_GLIBCXX_HAS_GTHREADS))
+#  define MCU_APP_STD_MUTEX_AVAILABLE 1
+# else
+#  define MCU_APP_STD_MUTEX_AVAILABLE 0
+# endif
+#endif
+
+#if defined(ARDUINO_ARCH_ESP32) || CONFIG_STD_MUTEX_AVAILABLE
+# define MCU_APP_THREAD_SAFE 1
+#else
+# define MCU_APP_THREAD_SAFE 0
+#endif
 
 #include <CBOR.h>
 #include <CBOR_parsing.h>
