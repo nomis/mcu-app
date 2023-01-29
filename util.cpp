@@ -191,6 +191,11 @@ std::string reset_reason_string(RESET_REASON reason) {
 	RR_STR(SUPER_WDT)
 	RR_STR(GLITCH_RTC)
 	RR_STR(EFUSE)
+# ifdef ARDUINO_LOLIN_S3
+	RR_STR(USB_UART_CHIP)
+	RR_STR(USB_JTAG_CHIP)
+	RR_STR(POWER_GLITCH)
+# endif
 #undef RR_STR
 	}
 
