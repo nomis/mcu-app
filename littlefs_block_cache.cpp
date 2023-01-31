@@ -85,7 +85,9 @@ static int read(const struct lfs_config *c,
 			if (used_cache_size >= FILESYSTEM_CACHE_BLOCKS) {
 				uint16_t pos = rand() % FILESYSTEM_CACHE_BLOCKS;
 
-				block_index[cache_index[pos]] = UINT16_MAX;
+				if (cache_index[pos] != UINT16_MAX) {
+					block_index[cache_index[pos]] = UINT16_MAX;
+				}
 				block_index[block] = pos;
 				cache_index[block_index[block]] = block;
 			} else {
