@@ -1,6 +1,6 @@
 /*
  * mcu-app - Microcontroller application framework
- * Copyright 2022  Simon Arlott
+ * Copyright 2022-2023  Simon Arlott
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -37,6 +37,7 @@
 #define PSTR(s) (__extension__({static const char __c[] = (s); &__c[0];}))
 
 #define IRAM_ATTR
+#define DRAM_ATTR
 
 #define printf_P printf
 #define strlen_P strlen
