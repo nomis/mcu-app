@@ -16,7 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "config.h"
+#include "app/config.h"
 
 #include <Arduino.h>
 #ifndef ENV_NATIVE
@@ -34,9 +34,9 @@
 #include <uuid/common.h>
 #include <uuid/log.h>
 
-#include "app.h"
-#include "fs.h"
-#include "util.h"
+#include "app/app.h"
+#include "app/fs.h"
+#include "app/util.h"
 
 #ifndef PSTR_ALIGN
 # define PSTR_ALIGN 4

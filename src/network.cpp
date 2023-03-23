@@ -17,7 +17,7 @@
  */
 
 #ifndef ENV_NATIVE
-#include "network.h"
+#include "app/network.h"
 
 #include <Arduino.h>
 
@@ -46,7 +46,7 @@
 
 #include <functional>
 
-#include "config.h"
+#include "app/config.h"
 
 #ifndef PSTR_ALIGN
 # define PSTR_ALIGN 4

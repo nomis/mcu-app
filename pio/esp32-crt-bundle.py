@@ -18,7 +18,7 @@
 # PlatformIO usage:
 #
 # [env:...]
-# extra_scripts = pre:src/app/pio/esp32-crt-bundle.py
+# extra_scripts = pre:app/pio/esp32-crt-bundle.py
 
 import os
 import subprocess
@@ -31,7 +31,7 @@ def genhdr_before_build(env, node):
 	if not run:
 		# PlatformIO sets PYTHONPATH which may break virtualenv
 		subprocess.run(
-			["env", "-u" "PYTHONPATH", "make", "-C", env["PROJECT_SRC_DIR"] + "/app/pio/certs", "-L"],
+			["env", "-u" "PYTHONPATH", "make", "-C", "app/pio/certs", "-L"],
 			check=True, universal_newlines=True)
 		run = True
 

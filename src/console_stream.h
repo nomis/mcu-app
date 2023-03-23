@@ -22,8 +22,8 @@
 
 #include "console.h"
 
-#if __has_include("../console_app_shell_type.h")
-# include "../console_app_shell_type.h"
+#if __has_include("../../src/console_app_shell_type.h")
+# include "../../src/console_app_shell_type.h"
 #else
 # define APP_SHELL_TYPE AppShell
 #endif

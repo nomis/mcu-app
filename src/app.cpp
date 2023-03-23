@@ -16,7 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "app.h"
+#include "app/app.h"
 
 #include <Arduino.h>
 #ifdef ARDUINO_ARCH_ESP8266
@@ -53,12 +53,12 @@
 # include <uuid/telnet.h>
 #endif
 
-#include "config.h"
-#include "console.h"
-#include "console_stream.h"
-#include "fs.h"
-#include "network.h"
-#include "util.h"
+#include "app/config.h"
+#include "app/console.h"
+#include "app/console_stream.h"
+#include "app/fs.h"
+#include "app/network.h"
+#include "app/util.h"
 
 #ifndef APP_NAME
 # error "APP_NAME not defined"
@@ -73,8 +73,8 @@ static_assert(uuid::log::thread_safe, "uuid-log must be thread-safe");
 static_assert(uuid::syslog::thread_safe, "uuid-syslog must be thread-safe");
 static_assert(uuid::console::thread_safe, "uuid-console must be thread-safe");
 
-extern const uint8_t x509_crt_bundle_start[] asm("_binary_src_app_pio_certs_x509_crt_bundle_start");
-extern const uint8_t x509_crt_bundle_end[]   asm("_binary_src_app_pio_certs_x509_crt_bundle_end");
+extern const uint8_t x509_crt_bundle_start[] asm("_binary_app_pio_certs_x509_crt_bundle_start");
+extern const uint8_t x509_crt_bundle_end[]   asm("_binary_app_pio_certs_x509_crt_bundle_end");
 
 # if !CONFIG_BOOTLOADER_APP_ROLLBACK_ENABLE
 #  error "Need CONFIG_BOOTLOADER_APP_ROLLBACK_ENABLE for OTA"

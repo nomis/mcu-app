@@ -96,8 +96,8 @@ private:
 	bool write_config(const std::string &filename);
 	void write_config(qindesign::cbor::Writer &writer);
 
-#if __has_include("../config_class.h")
-# include "../config_class.h"
+#if __has_include("../../src/config_class.h")
+# include "../../src/config_class.h"
 #else
 # define MCU_APP_CONFIG_DATA
 #endif

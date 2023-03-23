@@ -16,7 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "console.h"
+#include "app/console.h"
 
 #include <Arduino.h>
 #include <time.h>
@@ -48,12 +48,12 @@
 #include <uuid/console.h>
 #include <uuid/log.h>
 
-#include "app.h"
-#include "config.h"
-#include "console_stream.h"
-#include "fs.h"
-#include "network.h"
-#include "util.h"
+#include "app/app.h"
+#include "app/config.h"
+#include "app/console_stream.h"
+#include "app/fs.h"
+#include "app/network.h"
+#include "app/util.h"
 
 #ifndef PSTR_ALIGN
 # define PSTR_ALIGN 4
