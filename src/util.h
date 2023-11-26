@@ -28,6 +28,7 @@
 #if __has_include(<mutex>)
 # include <mutex>
 #endif
+#include <cstring>
 #include <string>
 
 #ifndef MCU_APP_STD_MUTEX_AVAILABLE
@@ -62,6 +63,12 @@ private:
 };
 
 std::string hex_string(const uint8_t *buf, size_t len);
+
+template<typename T, size_t size>
+static inline std::string null_terminated_string(T(&data)[size]) {
+	T *found = reinterpret_cast<T*>(std::memchr(&data[0], '\0', size));
+	return std::string{&data[0], found ? (found - &data[0]) : size};
+};
 
 std::string normalise_filename(const std::string &filename);
 std::string base_filename(const std::string &filename);

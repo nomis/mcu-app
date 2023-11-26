@@ -678,9 +678,11 @@ static void setup_builtin_commands(std::shared_ptr<Commands> &commands) {
 			shell.println(ota_state_string(state));
 
 			if (!esp_ota_get_partition_description(part, &desc)) {
-				shell.printfln(F("    Name:      %s"), desc.project_name);
-				shell.printfln(F("    Version:   %s"), desc.version);
-				shell.printfln(F("    Timestamp: %s %s"), desc.date, desc.time);
+				shell.printfln(F("    Name:      %s"), null_terminated_string(desc.project_name).c_str());
+				shell.printfln(F("    Version:   %s"), null_terminated_string(desc.version).c_str());
+				shell.printfln(F("    Timestamp: %s %s"),
+					null_terminated_string(desc.date).c_str(),
+					null_terminated_string(desc.time).c_str());
 				shell.print(F("    Hash:      "));
 				shell.println(HexPrintable(desc.app_elf_sha256, sizeof(desc.app_elf_sha256)));
 			}
