@@ -81,6 +81,7 @@ MAKE_PSTR_WORD(bad)
 MAKE_PSTR_WORD(connect)
 MAKE_PSTR_WORD(console)
 MAKE_PSTR_WORD(cp)
+MAKE_PSTR_WORD(ddns)
 #if defined(ARDUINO_ARCH_ESP8266)
 MAKE_PSTR_WORD(disabled)
 #endif
@@ -130,10 +131,13 @@ MAKE_PSTR_WORD(system)
 MAKE_PSTR_WORD(update)
 #endif
 MAKE_PSTR_WORD(uptime)
+MAKE_PSTR_WORD(url)
 MAKE_PSTR_WORD(version)
 MAKE_PSTR_WORD(wifi)
 MAKE_PSTR_WORD(write)
 MAKE_PSTR(asterisks, "********")
+MAKE_PSTR(ddns_url_fmt, "DDNS URL = %s");
+MAKE_PSTR(ddns_password_fmt, "DDNS Password = %S");
 MAKE_PSTR(filename_mandatory, "<filename>")
 MAKE_PSTR(filename_optional, "[filename]")
 MAKE_PSTR(host_is_fmt, "Host = %s")
@@ -153,6 +157,7 @@ MAKE_PSTR(ota_password_fmt, "OTA Password = %S");
 MAKE_PSTR(password_prompt, "Password: ")
 MAKE_PSTR(seconds_optional, "[seconds]")
 MAKE_PSTR(unset, "<unset>")
+MAKE_PSTR(url_mandatory, "<url>")
 MAKE_PSTR(wifi_ssid_fmt, "WiFi SSID = %s");
 MAKE_PSTR(wifi_password_fmt, "WiFi Password = %S");
 #pragma GCC diagnostic pop
@@ -511,6 +516,39 @@ static void setup_builtin_commands(std::shared_ptr<Commands> &commands) {
 	commands->add_command(ShellContext::MAIN, CommandFlags::USER, flash_string_vector{F_(set)},
 			[] (Shell &shell, const std::vector<std::string> &arguments) {
 		to_shell(shell).set_command(shell);
+	});
+
+	commands->add_command(ShellContext::MAIN, CommandFlags::ADMIN, flash_string_vector{F_(set), F_(ddns), F_(url)}, flash_string_vector{F_(url_mandatory)},
+			[] (Shell &shell, const std::vector<std::string> &arguments) {
+		Config config;
+		config.ddns_url(arguments.front());
+		config.commit();
+		shell.printfln(F_(ddns_url_fmt), config.ddns_url().empty() ? uuid::read_flash_string(F_(unset)).c_str() : config.ddns_url().c_str());
+	},
+	[] (Shell &shell, const std::vector<std::string> &current_arguments,
+			const std::string &next_argument) -> std::vector<std::string> {
+		Config config;
+		return {config.ddns_url()};
+	});
+
+	commands->add_command(ShellContext::MAIN, CommandFlags::ADMIN, flash_string_vector{F_(set), F_(ddns), F_(password)},
+			[] (Shell &shell, const std::vector<std::string> &arguments) {
+		shell.enter_password(F_(new_password_prompt1), [] (Shell &shell, bool completed, const std::string &password1) {
+				if (completed) {
+					shell.enter_password(F_(new_password_prompt2), [password1] (Shell &shell, bool completed, const std::string &password2) {
+						if (completed) {
+							if (password1 == password2) {
+								Config config;
+								config.ddns_password(password2);
+								config.commit();
+								shell.println(F("DDNS password updated"));
+							} else {
+								shell.println(F("Passwords do not match"));
+							}
+						}
+					});
+				}
+			});
 	});
 
 	commands->add_command(ShellContext::MAIN, CommandFlags::ADMIN, flash_string_vector{F_(set), F_(hostname)}, flash_string_vector{F_(name_optional)},
@@ -1290,6 +1328,10 @@ void AppShell::set_command(Shell &shell) {
 	if (shell.has_flags(CommandFlags::ADMIN | CommandFlags::LOCAL)) {
 		shell.printfln(F_(wifi_ssid_fmt), config.wifi_ssid().empty() ? uuid::read_flash_string(F_(unset)).c_str() : config.wifi_ssid().c_str());
 		shell.printfln(F_(wifi_password_fmt), config.wifi_password().empty() ? F_(unset) : F_(asterisks));
+	}
+	if (shell.has_flags(CommandFlags::ADMIN)) {
+		shell.printfln(F_(ddns_url_fmt), config.ddns_url().empty() ? uuid::read_flash_string(F_(unset)).c_str() : config.ddns_url().c_str());
+		shell.printfln(F_(ddns_password_fmt), config.ddns_password().empty() ? F_(unset) : F_(asterisks));
 	}
 #if defined(ARDUINO_ARCH_ESP8266)
 	if (shell.has_flags(CommandFlags::ADMIN)) {

@@ -59,6 +59,12 @@ public:
 	unsigned long syslog_mark_interval() const;
 	void syslog_mark_interval(unsigned long syslog_mark_interval);
 
+	std::string ddns_url() const;
+	void ddns_url(const std::string &ddns_url);
+
+	std::string ddns_password() const;
+	void ddns_password(const std::string &ddns_password);
+
 #if defined(ARDUINO_ARCH_ESP8266)
 	bool ota_enabled() const;
 	void ota_enabled(bool ota_enabled);
@@ -82,6 +88,8 @@ private:
 	static std::string syslog_host_;
 	static uuid::log::Level syslog_level_;
 	static unsigned long syslog_mark_interval_;
+	static std::string ddns_url_;
+	static std::string ddns_password_;
 #if defined(ARDUINO_ARCH_ESP8266)
 	static bool ota_enabled_;
 	static std::string ota_password_;

@@ -244,6 +244,7 @@ void App::loop() {
 	uuid::loop();
 #ifndef ENV_NATIVE
 	syslog_.loop();
+	ddns_.loop();
 	telnet_.loop();
 #endif
 	uuid::console::Shell::loop_all();

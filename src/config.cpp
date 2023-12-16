@@ -72,6 +72,8 @@ namespace app {
 		MCU_APP_CONFIG_CUSTOM(std::string, "", syslog_host, "", "") \
 		MCU_APP_CONFIG_ENUM(uuid::log::Level, "", syslog_level, "", uuid::log::Level::OFF) \
 		MCU_APP_CONFIG_PRIMITIVE(unsigned long, "", syslog_mark_interval, "", 0) \
+		MCU_APP_CONFIG_SIMPLE(std::string, "", ddns_url, "", "") \
+		MCU_APP_CONFIG_SIMPLE(std::string, "", ddns_password, "", "") \
 		MCU_APP_INTERNAL_CONFIG_DATA_OTA \
 		MCU_APP_CONFIG_DATA
 
