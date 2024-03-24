@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # app-tls-size - Calculate size of Thread-Local Storage
-# Copyright 2022  Simon Arlott
+# Copyright 2022,2024  Simon Arlott
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -74,15 +74,15 @@ def print_tls_size(fw_elf):
 		syms = list(syms)
 		syms.sort()
 		size = (syms[-1].value + syms[-1].size) - syms[0].value
+
+		value = syms[0].value
+		for sym in syms:
+			if sym.value > value:
+				print("\t{1:0{0}x} {2:5d} TLS            UNKNOWN".format(width, value, sym.value - value))
+			print(sym.line)
+			value = sym.value + sym.size
 	else:
 		size = 0
-
-	value = syms[0].value
-	for sym in syms:
-		if sym.value > value:
-			print("\t{1:0{0}x} {2:5d} TLS            UNKNOWN".format(width, value, sym.value - value))
-		print(sym.line)
-		value = sym.value + sym.size
 
 	print()
 	print(f"Total Thread-Local Storage size: {size} bytes")
