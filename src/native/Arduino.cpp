@@ -1,6 +1,6 @@
 /*
  * mcu-app - Microcontroller application framework
- * Copyright 2022-2023  Simon Arlott
+ * Copyright 2022-2024  Simon Arlott
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,6 +24,7 @@
 #include <stdarg.h>
 #include <stdlib.h>
 #include <termios.h>
+#include <time.h>
 #include <unistd.h>
 
 #include <list>
