@@ -1,9 +1,8 @@
 .PHONY: clean
 
-PIPENV_VENV_IN_PROJECT=1
-
 .venv/bin/python: Pipfile
 	rm -rf .venv
+	mkdir .venv
 	pipenv install --skip-lock
 
 clean:
