@@ -120,7 +120,7 @@ static void write_text(cbor::Writer &writer, const char *text, size_t length) {
 }
 
 void write_text(cbor::Writer &writer, const std::string &text) {
-	write_text(writer, text.c_str()), text.length();
+	write_text(writer, text.c_str(), text.length());
 }
 
 void write_text(cbor::Writer &writer, const char *text) {
