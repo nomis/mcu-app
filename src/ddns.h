@@ -1,6 +1,6 @@
 /*
  * mcu-app - Microcontroller application framework
- * Copyright 2023  Simon Arlott
+ * Copyright 2023-2024  Simon Arlott
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,15 +17,11 @@
  */
 
 #pragma once
-#ifndef ENV_NATIVE
+#ifdef ARDUINO_ARCH_ESP32
 
 #include <Arduino.h>
 #include <esp_http_client.h>
-#ifdef ARDUINO_ARCH_ESP8266
-# include <ESP8266WiFi.h>
-#else
-# include <WiFi.h>
-#endif
+#include <WiFi.h>
 
 #include <atomic>
 #include <memory>

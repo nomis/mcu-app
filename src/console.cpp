@@ -1,6 +1,6 @@
 /*
  * mcu-app - Microcontroller application framework
- * Copyright 2022-2023  Simon Arlott
+ * Copyright 2022-2024  Simon Arlott
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -59,6 +59,12 @@
 # define PSTR_ALIGN 4
 #endif
 
+#if defined(ARDUINO_ARCH_ESP32)
+# define CONSOLE_FILESYSTEM_SUPPORTED 1
+#else
+# define CONSOLE_FILESYSTEM_SUPPORTED 0
+#endif
+
 using ::uuid::flash_string_vector;
 using ::uuid::console::Commands;
 using ::uuid::console::Shell;
@@ -80,7 +86,9 @@ MAKE_PSTR_WORD(bad)
 #endif
 MAKE_PSTR_WORD(connect)
 MAKE_PSTR_WORD(console)
+#if CONSOLE_FILESYSTEM_SUPPORTED
 MAKE_PSTR_WORD(cp)
+#endif
 MAKE_PSTR_WORD(ddns)
 #if defined(ARDUINO_ARCH_ESP8266)
 MAKE_PSTR_WORD(disabled)
@@ -90,7 +98,9 @@ MAKE_PSTR_WORD(disconnect)
 MAKE_PSTR_WORD(enabled)
 #endif
 MAKE_PSTR_WORD(exit)
+#if CONSOLE_FILESYSTEM_SUPPORTED
 MAKE_PSTR_WORD(fs)
+#endif
 #if !defined(ARDUINO_ARCH_ESP8266)
 MAKE_PSTR_WORD(good)
 #endif
@@ -100,12 +110,18 @@ MAKE_PSTR_WORD(hostname)
 MAKE_PSTR_WORD(level)
 MAKE_PSTR_WORD(log)
 MAKE_PSTR_WORD(logout)
+#if CONSOLE_FILESYSTEM_SUPPORTED
 MAKE_PSTR_WORD(ls)
+#endif
 MAKE_PSTR_WORD(mark)
 MAKE_PSTR_WORD(memory)
+#if CONSOLE_FILESYSTEM_SUPPORTED
 MAKE_PSTR_WORD(mkdir)
+#endif
 MAKE_PSTR_WORD(mkfs)
+#if CONSOLE_FILESYSTEM_SUPPORTED
 MAKE_PSTR_WORD(mv)
+#endif
 MAKE_PSTR_WORD(network)
 #if defined(ARDUINO_ARCH_ESP8266)
 MAKE_PSTR_WORD(off)
@@ -114,11 +130,15 @@ MAKE_PSTR_WORD(on)
 MAKE_PSTR_WORD(ota)
 MAKE_PSTR_WORD(passwd)
 MAKE_PSTR_WORD(password)
+#if CONSOLE_FILESYSTEM_SUPPORTED
 MAKE_PSTR_WORD(read)
+#endif
 MAKE_PSTR_WORD(reboot)
 MAKE_PSTR_WORD(reconnect)
+#if CONSOLE_FILESYSTEM_SUPPORTED
 MAKE_PSTR_WORD(rm)
 MAKE_PSTR_WORD(rmdir)
+#endif
 MAKE_PSTR_WORD(scan)
 MAKE_PSTR_WORD(set)
 MAKE_PSTR_WORD(show)
@@ -134,12 +154,16 @@ MAKE_PSTR_WORD(uptime)
 MAKE_PSTR_WORD(url)
 MAKE_PSTR_WORD(version)
 MAKE_PSTR_WORD(wifi)
+#if CONSOLE_FILESYSTEM_SUPPORTED
 MAKE_PSTR_WORD(write)
+#endif
 MAKE_PSTR(asterisks, "********")
 MAKE_PSTR(ddns_url_fmt, "DDNS URL = %s");
 MAKE_PSTR(ddns_password_fmt, "DDNS Password = %S");
+#if CONSOLE_FILESYSTEM_SUPPORTED
 MAKE_PSTR(filename_mandatory, "<filename>")
 MAKE_PSTR(filename_optional, "[filename]")
+#endif
 MAKE_PSTR(host_is_fmt, "Host = %s")
 MAKE_PSTR(invalid_log_level, "Invalid log level")
 MAKE_PSTR(ip_address_optional, "[IP address]")
@@ -173,6 +197,8 @@ static inline App &to_app(Shell &shell) {
 }
 
 #define NO_ARGUMENTS std::vector<std::string>{}
+
+#if CONSOLE_FILESYSTEM_SUPPORTED
 
 static char encode_base64(uint8_t value) {
 	if (value < 26) {
@@ -354,6 +380,8 @@ retry:
 	return files;
 }
 
+#endif
+
 static void console_log_level(Shell &shell, const std::vector<std::string> &arguments) {
 	if (!arguments.empty()) {
 		uuid::log::Level level;
@@ -383,10 +411,12 @@ static void setup_builtin_commands(std::shared_ptr<Commands> &commands) {
 		commands->add_command(context, CommandFlags::USER, {F_(logout)}, AppShell::main_logout_function);
 	}
 
+#if CONSOLE_FILESYSTEM_SUPPORTED
 	commands->add_command(ShellContext::MAIN, CommandFlags::ADMIN, flash_string_vector{F_(fs)},
 			[] (Shell &shell, const std::vector<std::string> &arguments) {
 		shell.enter_context(ShellContext::FILESYSTEM);
 	});
+#endif
 
 #ifndef ENV_NATIVE
 	commands->add_command(ShellContext::MAIN, CommandFlags::ADMIN | CommandFlags::LOCAL, flash_string_vector{F_(mkfs)},
@@ -908,6 +938,7 @@ static void setup_builtin_commands(std::shared_ptr<Commands> &commands) {
 	});
 #endif
 
+#if CONSOLE_FILESYSTEM_SUPPORTED
 	commands->add_command(ShellContext::FILESYSTEM, CommandFlags::ADMIN, flash_string_vector{F_(ls)}, flash_string_vector{F_(filename_optional)},
 			[] (Shell &shell, const std::vector<std::string> &arguments) {
 		auto dirname = arguments.empty() ? uuid::read_flash_string(F("/")) : arguments[0];
@@ -1205,6 +1236,7 @@ static void setup_builtin_commands(std::shared_ptr<Commands> &commands) {
 			return stop;
 		});
 	}, fs_autocomplete);
+#endif
 }
 
 __attribute__((weak)) void setup_commands(std::shared_ptr<Commands> &commands) {}

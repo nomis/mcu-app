@@ -1,6 +1,6 @@
 /*
  * mcu-app - Microcontroller application framework
- * Copyright 2022-2023  Simon Arlott
+ * Copyright 2022-2024  Simon Arlott
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -244,7 +244,9 @@ void App::loop() {
 	uuid::loop();
 #ifndef ENV_NATIVE
 	syslog_.loop();
+# ifdef ARDUINO_ARCH_ESP32
 	ddns_.loop();
+# endif
 	telnet_.loop();
 #endif
 	uuid::console::Shell::loop_all();
@@ -328,7 +330,7 @@ void App::config_ota() {
 			logger_.notice("OTA start");
 
 			Config config;
-			config.umount();
+			FS.end();
 
 			while (syslog_.current_log_messages()) {
 				syslog_.loop();
@@ -337,6 +339,7 @@ void App::config_ota() {
 		ArduinoOTA.onEnd([this] () {
 			logger_.notice("OTA end");
 
+			FS_begin(true);
 			Config config;
 			config.commit();
 
@@ -347,6 +350,8 @@ void App::config_ota() {
 		ArduinoOTA.onError([this] (ota_error_t error) {
 			if (error == OTA_END_ERROR) {
 				logger_.notice("OTA error");
+
+				FS_begin(true);
 				Config config;
 				config.commit();
 

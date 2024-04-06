@@ -1,6 +1,6 @@
 /*
  * mcu-app - Microcontroller application framework
- * Copyright 2023  Simon Arlott
+ * Copyright 2023-2024  Simon Arlott
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,7 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef ENV_NATIVE
+#ifdef ARDUINO_ARCH_ESP32
 #include "app/ddns.h"
 
 #include <Arduino.h>
@@ -29,13 +29,7 @@
 #include <esp_crt_bundle.h>
 #pragma GCC diagnostic pop
 
-#if defined(ARDUINO_ARCH_ESP8266)
-# include <ESP8266WiFi.h>
-#elif defined(ARDUINO_ARCH_ESP32)
-# include <WiFi.h>
-#else
-# error "Unknown arch"
-#endif
+#include <WiFi.h>
 
 #include <thread>
 

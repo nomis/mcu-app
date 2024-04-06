@@ -16,7 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef ENV_NATIVE
+#ifdef ARDUINO_ARCH_ESP32
 
 #include <Arduino.h>
 #include <esp_timer.h>

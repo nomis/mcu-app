@@ -1,6 +1,6 @@
 /*
  * mcu-app - Microcontroller application framework
- * Copyright 2022-2023  Simon Arlott
+ * Copyright 2022-2024  Simon Arlott
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -110,6 +110,10 @@ static inline bool read_map_value(cbor::Reader &reader, std::string &value) {
 	return read_text(reader, value);
 }
 
+static bool read_map_value(cbor::Reader &reader, bool &value) {
+	return cbor::expectBoolean(reader, &value);
+}
+
 static bool read_map_value(cbor::Reader &reader, long &value) {
 	int64_t value64;
 
@@ -183,6 +187,10 @@ bool Config::read_config(cbor::Reader &reader) {
 static void write_map_value(cbor::Writer &writer, const std::string &value) {
 	writer.beginText(value.length());
 	writer.writeBytes(reinterpret_cast<const uint8_t*>(value.c_str()), value.length());
+}
+
+static void write_map_value(cbor::Writer &writer, bool value) {
+	writer.writeBoolean(value);
 }
 
 static void write_map_value(cbor::Writer &writer, long value) {

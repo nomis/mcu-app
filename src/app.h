@@ -1,6 +1,6 @@
 /*
  * mcu-app - Microcontroller application framework
- * Copyright 2022-2023  Simon Arlott
+ * Copyright 2022-2024  Simon Arlott
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -71,7 +71,9 @@ public:
 
 #ifndef ENV_NATIVE
 	Network network_;
+# ifdef ARDUINO_ARCH_ESP32
 	DynamicDNS ddns_;
+# endif
 #endif
 
 protected:
