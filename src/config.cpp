@@ -106,15 +106,15 @@ void Config::read_config_defaults() {
 #undef MCU_APP_CONFIG_GENERIC
 }
 
-static inline bool read_map_value(cbor::Reader &reader, std::string &value) {
+static __attribute__((unused)) inline bool read_map_value(cbor::Reader &reader, std::string &value) {
 	return read_text(reader, value);
 }
 
-static bool read_map_value(cbor::Reader &reader, bool &value) {
+static __attribute__((unused)) bool read_map_value(cbor::Reader &reader, bool &value) {
 	return cbor::expectBoolean(reader, &value);
 }
 
-static bool read_map_value(cbor::Reader &reader, long &value) {
+static __attribute__((unused)) bool read_map_value(cbor::Reader &reader, long &value) {
 	int64_t value64;
 
 	if (!cbor::expectInt(reader, &value64))
@@ -124,7 +124,7 @@ static bool read_map_value(cbor::Reader &reader, long &value) {
 	return true;
 }
 
-static bool read_map_value(cbor::Reader &reader, unsigned long &value) {
+static __attribute__((unused)) bool read_map_value(cbor::Reader &reader, unsigned long &value) {
 	uint64_t value64;
 
 	if (!cbor::expectUnsignedInt(reader, &value64))
@@ -184,20 +184,20 @@ bool Config::read_config(cbor::Reader &reader) {
 	return true;
 }
 
-static void write_map_value(cbor::Writer &writer, const std::string &value) {
+static __attribute__((unused)) void write_map_value(cbor::Writer &writer, const std::string &value) {
 	writer.beginText(value.length());
 	writer.writeBytes(reinterpret_cast<const uint8_t*>(value.c_str()), value.length());
 }
 
-static void write_map_value(cbor::Writer &writer, bool value) {
+static __attribute__((unused)) void write_map_value(cbor::Writer &writer, bool value) {
 	writer.writeBoolean(value);
 }
 
-static void write_map_value(cbor::Writer &writer, long value) {
+static __attribute__((unused)) void write_map_value(cbor::Writer &writer, long value) {
 	writer.writeInt(value);
 }
 
-static void write_map_value(cbor::Writer &writer, unsigned long value) {
+static __attribute__((unused)) void write_map_value(cbor::Writer &writer, unsigned long value) {
 	writer.writeInt(value);
 }
 
