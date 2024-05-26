@@ -458,6 +458,7 @@ static void setup_builtin_commands(std::shared_ptr<Commands> &commands) {
 		esp_https_ota_config_t ota_config{};
 		esp_https_ota_handle_t handle{};
 
+		http_config.buffer_size = 4096;
 		http_config.crt_bundle_attach = arduino_esp_crt_bundle_attach;
 		http_config.keep_alive_enable = true;
 		http_config.disable_auto_redirect = true;
@@ -471,11 +472,12 @@ static void setup_builtin_commands(std::shared_ptr<Commands> &commands) {
 		}
 
 		const int size = esp_https_ota_get_image_size(handle);
-		uint64_t last_update_ms = uuid::get_uptime_ms();
+		uint64_t start_ms = uuid::get_uptime_ms();
+		uint64_t last_update_ms = start_ms;
 		int last_progress = -1;
 		shell.printfln(F("OTA size: %d"), size);
 
-		shell.block_with([http_config, ota_config, handle, size, last_update_ms, last_progress]
+		shell.block_with([http_config, ota_config, handle, size, start_ms, last_update_ms, last_progress]
 				(Shell &shell, bool stop) mutable -> bool {
 			if (stop) {
 				esp_https_ota_abort(handle);
@@ -499,7 +501,8 @@ static void setup_builtin_commands(std::shared_ptr<Commands> &commands) {
 				if (err) {
 					shell.printfln(F("OTA failed: %d"), err);
 				} else {
-					shell.printfln(F("OTA finished"));
+					shell.printfln(F("OTA finished (%ums)"),
+						uuid::get_uptime_ms() - start_ms);
 				}
 
 				return true;
