@@ -267,6 +267,7 @@ static bool fs_allowed(Shell &shell, const std::string &filename) {
 }
 
 static bool fs_valid_file(Shell &shell, const std::string &filename, bool allow_dir = false) {
+	std::lock_guard lock{App::file_mutex()};
 	const char mode[2] = { 'r', '\0' };
 	auto file = FS.open(filename.c_str(), mode);
 
@@ -289,6 +290,7 @@ static bool fs_valid_file(Shell &shell, const std::string &filename, bool allow_
 }
 
 static bool fs_valid_dir(Shell &shell, const std::string &dirname, bool must_exist = true) {
+	std::lock_guard lock{App::file_mutex()};
 	auto dir = FS.open(dirname.c_str());
 
 	if (dir) {
@@ -310,6 +312,8 @@ static bool fs_valid_dir(Shell &shell, const std::string &dirname, bool must_exi
 }
 
 static bool fs_valid_mv_cp(Shell &shell, const std::string &from_filename, std::string &to_filename, bool allow_dir = false) {
+	std::lock_guard lock{App::file_mutex()};
+
 	if (!fs_valid_file(shell, from_filename, allow_dir))
 		return false;
 
@@ -347,6 +351,7 @@ static std::vector<std::string> fs_autocomplete(Shell &shell,
 		const std::string &next_argument) {
 	std::string path = next_argument.empty() ? std::string{{'/'}} : next_argument;
 	std::vector<std::string> files;
+	std::lock_guard lock{App::file_mutex()};
 
 retry:
 	auto dir = FS.open(path.c_str());
@@ -421,6 +426,7 @@ static void setup_builtin_commands(std::shared_ptr<Commands> &commands) {
 #ifndef ENV_NATIVE
 	commands->add_command(ShellContext::MAIN, CommandFlags::ADMIN | CommandFlags::LOCAL, flash_string_vector{F_(mkfs)},
 			[] (Shell &shell, const std::vector<std::string> &arguments) {
+		std::lock_guard lock{App::file_mutex()};
 		shell.logger().warning("Formatting filesystem");
 		if (FS.format()) {
 			auto msg = F("Formatted filesystem");
@@ -796,6 +802,7 @@ static void setup_builtin_commands(std::shared_ptr<Commands> &commands) {
 		}
 
 #if defined(ARDUINO_ARCH_ESP8266)
+		std::lock_guard lock{App::file_mutex()};
 		FSInfo info;
 		if (FS.info(info)) {
 			shell.printfln(F("FS size:       %zu bytes (block size %zu bytes, page size %zu bytes)"), info.totalBytes, info.blockSize, info.pageSize);
@@ -945,6 +952,7 @@ static void setup_builtin_commands(std::shared_ptr<Commands> &commands) {
 	commands->add_command(ShellContext::FILESYSTEM, CommandFlags::ADMIN, flash_string_vector{F_(ls)}, flash_string_vector{F_(filename_optional)},
 			[] (Shell &shell, const std::vector<std::string> &arguments) {
 		auto dirname = arguments.empty() ? uuid::read_flash_string(F("/")) : arguments[0];
+		std::lock_guard lock{App::file_mutex()};
 		const char mode[2] = { 'r', '\0' };
 		auto dir = FS.open(dirname.c_str(), mode);
 		if (dir) {
@@ -962,6 +970,7 @@ static void setup_builtin_commands(std::shared_ptr<Commands> &commands) {
 			[] (Shell &shell, const std::vector<std::string> &arguments) {
 		auto &from_filename = arguments[0];
 		auto to_filename = arguments[1];
+		std::lock_guard lock{App::file_mutex()};
 
 		if (!fs_valid_mv_cp(shell, from_filename, to_filename, true))
 			return;
@@ -980,6 +989,7 @@ static void setup_builtin_commands(std::shared_ptr<Commands> &commands) {
 			[] (Shell &shell, const std::vector<std::string> &arguments) {
 		auto &from_filename = arguments[0];
 		auto to_filename = arguments[1];
+		std::lock_guard lock{App::file_mutex()};
 
 		if (!fs_valid_mv_cp(shell, from_filename, to_filename))
 			return;
@@ -1011,6 +1021,7 @@ static void setup_builtin_commands(std::shared_ptr<Commands> &commands) {
 	commands->add_command(ShellContext::FILESYSTEM, CommandFlags::ADMIN, flash_string_vector{F_(rm)}, flash_string_vector{F_(filename_mandatory)},
 			[] (Shell &shell, const std::vector<std::string> &arguments) {
 		auto &filename = arguments[0];
+		std::lock_guard lock{App::file_mutex()};
 
 		if (!fs_valid_file(shell, filename))
 			return;
@@ -1024,6 +1035,7 @@ static void setup_builtin_commands(std::shared_ptr<Commands> &commands) {
 	commands->add_command(ShellContext::FILESYSTEM, CommandFlags::ADMIN, flash_string_vector{F_(mkdir)}, flash_string_vector{F_(filename_mandatory)},
 			[] (Shell &shell, const std::vector<std::string> &arguments) {
 		auto &dirname = arguments[0];
+		std::lock_guard lock{App::file_mutex()};
 
 		if (!fs_valid_dir(shell, dirname, false))
 			return;
@@ -1037,6 +1049,7 @@ static void setup_builtin_commands(std::shared_ptr<Commands> &commands) {
 	commands->add_command(ShellContext::FILESYSTEM, CommandFlags::ADMIN, flash_string_vector{F_(rmdir)}, flash_string_vector{F_(filename_mandatory)},
 			[] (Shell &shell, const std::vector<std::string> &arguments) {
 		auto &dirname = arguments[0];
+		std::lock_guard lock{App::file_mutex()};
 
 		if (!fs_valid_dir(shell, dirname))
 			return;
@@ -1050,6 +1063,7 @@ static void setup_builtin_commands(std::shared_ptr<Commands> &commands) {
 	commands->add_command(ShellContext::FILESYSTEM, CommandFlags::ADMIN, flash_string_vector{F_(read)}, flash_string_vector{F_(filename_mandatory)},
 			[] (Shell &shell, const std::vector<std::string> &arguments) {
 		auto &filename = arguments[0];
+		std::lock_guard lock{App::file_mutex()};
 
 		uint8_t buf[58];
 		const char mode[2] = { 'r', '\0' };
@@ -1121,6 +1135,7 @@ static void setup_builtin_commands(std::shared_ptr<Commands> &commands) {
 	commands->add_command(ShellContext::FILESYSTEM, CommandFlags::ADMIN, flash_string_vector{F_(write)}, flash_string_vector{F_(filename_mandatory)},
 			[] (Shell &shell, const std::vector<std::string> &arguments) {
 		auto filename = arguments[0];
+		std::lock_guard lock{App::file_mutex()};
 
 		{
 			const char mode[2] = { 'r', '\0' };
@@ -1218,6 +1233,7 @@ static void setup_builtin_commands(std::shared_ptr<Commands> &commands) {
 				if (len + padding > 0) {
 					shell.println(F("Data error: incomplete sequence"));
 				} else {
+					std::lock_guard lock{App::file_mutex()};
 					const char mode[2] = { 'w', '\0' };
 					auto file = FS.open(filename.c_str(), mode, true);
 

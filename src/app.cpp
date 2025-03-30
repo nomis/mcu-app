@@ -1,6 +1,6 @@
 /*
  * mcu-app - Microcontroller application framework
- * Copyright 2022-2024  Simon Arlott
+ * Copyright 2022-2025  Simon Arlott
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -90,6 +90,8 @@ static const char __pstr__logger_name[] __attribute__((__aligned__(PSTR_ALIGN)))
 namespace app {
 
 uuid::log::Logger App::logger_{FPSTR(__pstr__logger_name), uuid::log::Facility::KERN};
+
+std::recursive_mutex App::file_mutex_;
 
 App::App()
 #ifndef ENV_NATIVE
@@ -330,7 +332,10 @@ void App::config_ota() {
 			logger_.notice("OTA start");
 
 			Config config;
-			FS.end();
+			{
+				std::lock_guard lock{file_mutex()};
+				FS.end();
+			}
 
 			while (syslog_.current_log_messages()) {
 				syslog_.loop();

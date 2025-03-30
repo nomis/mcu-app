@@ -319,6 +319,7 @@ void Config::commit() {
 }
 
 bool Config::read_config(const std::string &filename, bool load) {
+	std::lock_guard lock{App::file_mutex()};
 	logger_.info(F("Reading config file %s"), filename.c_str());
 	const char mode[2] = {'r', '\0'};
 	auto file = FS.open(filename.c_str(), mode);
@@ -348,6 +349,7 @@ bool Config::read_config(const std::string &filename, bool load) {
 }
 
 bool Config::write_config(const std::string &filename) {
+	std::lock_guard lock{App::file_mutex()};
 	logger_.info(F("Writing config file %s"), filename.c_str());
 	const char mode[2] = {'w', '\0'};
 	auto file = FS.open(filename.c_str(), mode);

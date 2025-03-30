@@ -1,6 +1,6 @@
 /*
  * mcu-app - Microcontroller application framework
- * Copyright 2022-2024  Simon Arlott
+ * Copyright 2022-2025  Simon Arlott
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,6 +22,7 @@
 
 #include <initializer_list>
 #include <memory>
+#include <mutex>
 #include <vector>
 
 #ifndef ENV_NATIVE
@@ -56,6 +57,8 @@ private:
 #endif
 
 public:
+	static std::recursive_mutex& file_mutex() { return file_mutex_; }
+
 	~App() = default;
 	virtual void init();
 	virtual void start();
@@ -87,6 +90,8 @@ protected:
 #endif
 
 private:
+	static std::recursive_mutex file_mutex_;
+
 	void shell_prompt();
 
 #ifndef ENV_NATIVE

@@ -21,11 +21,16 @@
 #include <FS.h>
 #include <LittleFS.h>
 
+#include <mutex>
+
+#include "app.h"
+
 namespace app {
 
 static constexpr auto &FS = LittleFS;
 
 inline bool FS_begin(bool formatOnFail) {
+	std::lock_guard lock{App::file_mutex()};
 	bool ret;
 #if defined(ARDUINO_ARCH_ESP8266)
 	ret = FS.begin();
