@@ -51,6 +51,8 @@ private:
 #if defined(ARDUINO_ESP8266_WEMOS_D1MINI) || defined(ESP8266_WEMOS_D1MINI)
 #elif defined(ARDUINO_LOLIN_S2_MINI)
 #elif defined(ARDUINO_LOLIN_S3)
+#elif defined(ARDUINO_ESP_S3_DEVKITC)
+#elif defined(ARDUINO_ESP_S3_DEVKITM)
 #elif defined(ENV_NATIVE)
 #else
 # error "Unknown board"

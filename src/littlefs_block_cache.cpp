@@ -1,6 +1,6 @@
 /*
  * mcu-app - Microcontroller application framework
- * Copyright 2023  Simon Arlott
+ * Copyright 2023,2025  Simon Arlott
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -42,6 +42,14 @@ static constexpr size_t FILESYSTEM_BLOCK_SIZE = 4096;
 static constexpr size_t FILESYSTEM_SIZE = 2 * 1024 * 1024;
 static constexpr size_t FILESYSTEM_CACHE_SIZE = 512 * 1024;
 #elif defined(ARDUINO_LOLIN_S3)
+static constexpr size_t FILESYSTEM_BLOCK_SIZE = 4096;
+static constexpr size_t FILESYSTEM_SIZE = 8 * 1024 * 1024;
+static constexpr size_t FILESYSTEM_CACHE_SIZE = 2 * 1024 * 1024;
+#elif defined(ARDUINO_ESP_S3_DEVKITM)
+static constexpr size_t FILESYSTEM_BLOCK_SIZE = 4096;
+static constexpr size_t FILESYSTEM_SIZE = 8 * 1024 * 1024;
+static constexpr size_t FILESYSTEM_CACHE_SIZE = 2 * 1024 * 1024;
+#elif defined(ARDUINO_ESP_S3_DEVKITC)
 static constexpr size_t FILESYSTEM_BLOCK_SIZE = 4096;
 static constexpr size_t FILESYSTEM_SIZE = 8 * 1024 * 1024;
 static constexpr size_t FILESYSTEM_CACHE_SIZE = 2 * 1024 * 1024;

@@ -1,6 +1,6 @@
 /*
  * mcu-app - Microcontroller application framework
- * Copyright 2022-2023  Simon Arlott
+ * Copyright 2022-2023,2025  Simon Arlott
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -191,7 +191,7 @@ std::string reset_reason_string(RESET_REASON reason) {
 	RR_STR(SUPER_WDT)
 	RR_STR(GLITCH_RTC)
 	RR_STR(EFUSE)
-# ifdef ARDUINO_LOLIN_S3
+# ifdef ARDUINO_ANY_ESP32_S3
 	RR_STR(USB_UART_CHIP)
 	RR_STR(USB_JTAG_CHIP)
 	RR_STR(POWER_GLITCH)
