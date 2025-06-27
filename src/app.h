@@ -48,6 +48,9 @@ private:
 	static constexpr auto& serial_console_ = Serial;
 	static constexpr int CONSOLE_PIN = APP_CONSOLE_PIN;
 
+	App(const App&) = delete;
+	App& operator=(const App&) = delete;
+
 #if defined(ARDUINO_ESP8266_WEMOS_D1MINI) || defined(ESP8266_WEMOS_D1MINI)
 #elif defined(ARDUINO_LOLIN_S2_MINI)
 #elif defined(ARDUINO_LOLIN_S3)
